@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Review Genius Home Page{% endblock %}
+{% block heading %}ReviewGenius{% endblock %}
+  
+{% block content %}
+
+  <!-- # Search bar -->
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2 text-center">
+      <form class="form-inline" action="/search" method="GET">
+        <div class="form-group">
+          <input class="form-control input-lg" id="search-query" type="text" 
+            placeholder="Search for a product">
+        </div>
+        <div class="form-group">
+          <select class="form-control" id="search-index"> 
+            {% for idx in indexes %}
+                  <option value="{{ idx }}">{{ idx }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+    </div>
+  </div>
+  <br><br>
+
+  <!-- Register and login buttons -->
+  <div class="row">
+    <div class="col-xs-4 col-xs-offset-4 text-center">
+      <a class="btn btn-default" href="/register" role="button">
+        Register
+      </a>
+      <a class="btn btn-default" href="/login" role="button">
+        Log In
+      </a>
+    </div>
+  </div>
+{% endblock %}
