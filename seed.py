@@ -1,56 +1,76 @@
-## Makes calls to Amazon product advertising API and seeds database
-## with product information
+## seeds database with product information
+## and fake user data
 
 from model import connect_to_db, db
-from model import Product, Review
-from search_amazon import amazon, get_amazon_results
+from model import Product, Review, User, FavoriteProduct
 from server import app
 from faker import Faker
-from random import choice, randint, sample
+from random import randint, sample
+from datetime import datetime
+
 
 ##################### Seed Products ###########################
 
-PRODUCTS = ["milk frother", "umbrella", "earbuds", "electric kettle",
-            "python programming book", "keyboard", "tent", "ruby on rails",
-            "laptop case", "iphone case"]
+def load_products(filename):
+    """Load products from json-like file into database."""
 
-def load_products():
-    """Load products and their reviews into database."""
+    print "=================="
+    print "loading products"
 
-    for product in PRODUCTS:
+    f = open(filename)
+    for line in f:
+        product = eval(line)
 
-        print "Loading data for {}".format(product)
-
-        results = get_amazon_results(product)
-
-        product = Product(asin=,
-                          title=,
-                          price=,
-                          author=,
-                          url=,
-                          image=results)
+        product = Product(asin=product['asin'],
+                          title=product['title'],
+                          price=product.get('price'),
+                          author=product.get('author'),
+                          image=product.get('imUrl'))
 
         db.session.add(product)
-        db.session.commit()
+    db.session.commit()
 
-        # Get reviews and add them to the database
-        reviews = get_reviews_from_asin(asin)
 
-        for review in reviews:
-            review = Review(review_id=,
-                            review=,
-                            asin=asin)
+def load_reviews(filename):
+    """Load reviews from json-like dile into database."""
 
-            db.session.add(review)
+    print "=================="
+    print "loading reviews"
 
-        db.session.commit()
+    f = open(filename)
+    for line in f:
+        review = eval(line)
+
+        total_votes = review['helpful'][1]
+        helpful_votes = review['helpful'][0]
+
+        if total_votes != 0:
+            helpful_fraction = helpful_votes/total_votes
+        else:
+            helpful_fraction = 0
+
+        # review_time = datetime.strptime(review['reviewTime'], '%m %e, %Y')
+
+        new_review = Review(reviewer_id=review['reviewerID'],
+                            reviewer_name=review.get('reviewer_name'),
+                            review=review['reviewText'],
+                            asin=review['asin'],
+                            helpful_total=total_votes,
+                            helpful_fraction=helpful_fraction,
+                            rating=review['overall'],
+                            summary=review['summary'][:-2]) # Strip off trailing chars
+                            # time=review_time)
+
+        db.session.add(new_review)
+
+    db.session.commit()
 
 
 ##################### Seed Users ###############################
 
 N_USERS = 10
 
-def load_users():
+def create_users():
     """Creates fake users and loads them into the db"""
 
     print "====================="
@@ -71,16 +91,26 @@ def load_users():
 
     db.session.commit()
 
-    # Create User favorite products and reviews
 
-    # Select a random number of products for the user to have
-    n_products = randint(0, len(PRODUCTS)-1)
-    user_products = sample(PRODUCTS, n_products)
+def create_favorite_products():
+    """Create User favorite products"""
 
-    for product in user_products:
+    users = User.query.all()
+    products = Product.query.all()
 
-        asin = Product.query.filter_by()
-        favorite_product = FavoriteProduct()
+    for user in users:
+
+        # Select a random number of products for the user to have from 0-15
+        n_products = randint(0, 15)
+        user_products = sample(products, n_products)
+
+        for product in user_products:
+
+            favorite_product = FavoriteProduct(asin=product.asin,
+                                               user_id=user.user_id)
+            db.session.add(favorite_product)
+
+    db.session.commit()
 
 
 
@@ -95,8 +125,12 @@ if __name__ == "__main__":
     db.create_all()
 
     # Delete rows from table, so we don't replicate rows if this script is rerun
+    FavoriteProduct.query.delete()
+    User.query.delete()
     Product.query.delete()
     Review.query.delete()
 
-    load_products()
-    load_users()
+    load_products('data/electronics_metadata_subset_clean.json')
+    load_reviews('data/electronics_reviews_subset.json')
+    create_users()
+    create_favorite_products()

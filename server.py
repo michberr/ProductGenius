@@ -1,7 +1,6 @@
 from flask import Flask, render_template, redirect, request, flash, session, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from jinja2 import StrictUndefined
-from search_amazon import INDEXES, get_amazon_results
 
 app = Flask(__name__)
 
@@ -21,16 +20,40 @@ def display_homepage():
 
 
 @app.route('/search')
-def search_amazon():
-    """Retrieve data from search form and call Amazon API."""
+def search_amazon(query, index):
+    """Retrieve data from search form and display product results page."""
 
     search_index = request.args.get('index')
     query = request.args.get('query')
 
-    results = get_amazon_results(query, search_index)
+    # If query is in local database, query database
+    if query in Query.query.all():
+
+        # Filter by products containing the query term
+        results = Product.query.filter_by()
+
+
+    # Otherwise make call to amazon api and add information to database
+    else:
+        results = get_amazon_results(query, search_index)
 
     return render_template("product_page.html",
                            results)
+
+
+# @app.route('/user/int<user_id>')
+# def display_user_profile():
+#     """Display users favorite products and reviews"""
+
+#     return render_template("user_page.html")
+
+
+# @app.route('/register')
+
+# @app.route('/login')
+
+# @app.route('/logout')
+
 
 if __name__ == "__main__":
 
