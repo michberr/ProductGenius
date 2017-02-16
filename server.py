@@ -25,23 +25,21 @@ def display_homepage():
                            indexes=INDEXES)
 
 
-@app.route('/search')
-def search_amazon():
+@app.route('/search-product')
+def search_products():
     """Retrieve data from search form and display product results page."""
 
-    search_index = request.args.get('search-index')
+    # Will implement a way to use the search index in the future,
+    # but for now, just the query
+    # search_index = request.args.get('search-index')
+
     search_query = request.args.get('search-query')
 
+    # Only return products that match the search terms and have at least 1 review
     product_query = Product.query.filter(Product.title.like('%'+search_query+'%'),
-                                         Product.n_scores > 5)
+                                         Product.n_scores > 0)
 
     results = product_query.all()
-
-    print results
-
-    # else:
-    #     # join load with categories to reduce the search
-    #     search_results =
 
     if product_query.count() > 0:
         return render_template("product_page.html",
@@ -50,20 +48,76 @@ def search_amazon():
         return render_template("no_products.html")
 
 
+@app.route('/search-review')
+def search_reviews():
+    """Search through reviews for a product and display the results"""
 
-# @app.route('/user/int<user_id>')
-# def display_user_profile():
-#     """Display users favorite products and reviews"""
-
-#     return render_template("user_page.html")
+    pass
 
 
-# @app.route('/register')
+@app.route('/user/int<user_id>')
+def display_user_profile():
+    """Display user's favorite products and reviews.
+       User should be able to compare products/reviews side by side.
+       Might add functionality to add to the amazon cart via their API
+    """
 
-# @app.route('/login')
+    pass
 
-# @app.route('/logout')
 
+@app.route('/product/int<asin>')
+def display_productr_profile():
+    """Display a product details page.
+
+       Should have a pretty histogram with scores, an emoji/number
+       for wilson's ranking, reviews, a search bar for reviews (that
+       returns with an ajax call), and a form to favorite the product.
+    """
+
+    pass
+
+##################### Favorites ################################
+
+@app.route('/favorite-product')
+def add_favorite_product():
+    """Adds a product to a user's favorites"""
+
+    pass
+
+
+@app.route('/favorite-review')
+def add_favorite_review():
+    """Adds a review for a product to a user's favorites"""
+
+    pass
+
+
+
+################# Login, logout, and registration ###############
+
+@app.route('/register')
+def register_user():
+    """Registers a new user"""
+
+    pass
+
+
+@app.route('/login')
+def login():
+    """Logs a registered user into the app"""
+
+    pass
+
+
+@app.route('/logout')
+def logout():
+    """Logs a registered user out of the app"""
+
+    pass
+
+
+
+##################################################################
 
 if __name__ == "__main__":
 
