@@ -20,25 +20,25 @@ def display_homepage():
 
 
 @app.route('/search')
-def search_amazon(query, index):
+def search_amazon():
     """Retrieve data from search form and display product results page."""
 
-    search_index = request.args.get('index')
+    # search_index = request.args.get('index')
     query = request.args.get('query')
 
-    # If query is in local database, query database
-    if query in Query.query.all():
+    if search_index == "All":
+        search_results = Product.query.filter(Product.title.like('%'+query+'%')).all()
 
-        # Filter by products containing the query term
-        results = Product.query.filter_by()
+    # else:
+    #     # join load with categories to reduce the search
+    #     search_results =
 
-
-    # Otherwise make call to amazon api and add information to database
+    if search_results.count() > 0:
+        return render_template("product_page.html",
+                               results)
     else:
-        results = get_amazon_results(query, search_index)
+        return render_template("no_products.html")
 
-    return render_template("product_page.html",
-                           results)
 
 
 # @app.route('/user/int<user_id>')

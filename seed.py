@@ -2,7 +2,7 @@
 ## and fake user data
 
 from model import connect_to_db, db
-from model import Product, Review, User, FavoriteProduct
+from model import Product, Review, User, FavoriteProduct, Category, ProductCategory
 from server import app
 from faker import Faker
 from random import randint, sample
@@ -19,54 +19,80 @@ def load_products(filename):
 
     f = open(filename)
     for line in f:
-        product = eval(line)
+        p = eval(line)
 
-        product = Product(asin=product['asin'],
-                          title=product['title'],
-                          price=product.get('price'),
-                          author=product.get('author'),
-                          image=product.get('imUrl'))
+        product = Product(asin=p['asin'],
+                          title=p['title'],
+                          price=p.get('price'),
+                          author=p.get('author'),
+                          image=p.get('imUrl'))
 
         db.session.add(product)
-    db.session.commit()
+        db.session.commit()
 
+        # categories are stored in double brackets for some weird reason
+        for c in p['categories'][0]:
+            # Loop through each product category, add to the
+            # categories table if it's not there, and add it to the ProductCategories
+            # table also.
+
+            n_results = Category.query.filter_by(cat_name=c).count()
+
+            if n_results == 0:
+                category = Category(cat_name=c)
+                db.session.add(category)
+                db.session.commit()
+
+            product_category = ProductCategory(asin=p['asin'],
+                                               cat_name=c)
+            db.session.add(product_category)
+            db.session.commit()
+
+
+##################### Seed Reviews ###########################
 
 def load_reviews(filename):
-    """Load reviews from json-like dile into database."""
+    """Load reviews from json-like file into database."""
 
     print "=================="
     print "loading reviews"
 
     f = open(filename)
     for line in f:
-        review = eval(line)
+        r = eval(line)
 
-        total_votes = review['helpful'][1]
-        helpful_votes = review['helpful'][0]
+        # Format the helpful votes.
+        # They are stored in the file as a list of length 2 e.g. [1, 3]
+        # if one out of three people found this review helpful.
+        #
+        # I will store them in the database as total votes (integer)
+        # and the helpful fraction (float)
+        total_votes = r['helpful'][1]
+        helpful_votes = r['helpful'][0]
 
         if total_votes != 0:
             helpful_fraction = helpful_votes/total_votes
         else:
             helpful_fraction = 0
 
-        # review_time = datetime.strptime(review['reviewTime'], '%m %e, %Y')
+        review_time = datetime.strptime(r['reviewTime'], '%m %d, %Y')
 
-        new_review = Review(reviewer_id=review['reviewerID'],
-                            reviewer_name=review.get('reviewer_name'),
-                            review=review['reviewText'],
-                            asin=review['asin'],
-                            helpful_total=total_votes,
-                            helpful_fraction=helpful_fraction,
-                            rating=review['overall'],
-                            summary=review['summary'][:-2]) # Strip off trailing chars
-                            # time=review_time)
+        # Create a new review object and add it to the reviews table
+        review = Review(reviewer_id=r['reviewerID'],
+                        reviewer_name=r.get('reviewer_name'),
+                        review=r['reviewText'],
+                        asin=r['asin'],
+                        helpful_total=total_votes,
+                        helpful_fraction=helpful_fraction,
+                        rating=r['overall'],
+                        summary=r['summary'],
+                        time=review_time)
 
-        db.session.add(new_review)
-
+        db.session.add(review)
     db.session.commit()
 
 
-##################### Seed Users ###############################
+##################### Seed User data ###############################
 
 N_USERS = 10
 
