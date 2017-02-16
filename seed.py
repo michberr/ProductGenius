@@ -2,11 +2,12 @@
 ## and fake user data
 
 from model import connect_to_db, db
-from model import Product, Review, User, FavoriteProduct, Category, ProductCategory
+from model import Product, Review, User, FavoriteProduct, Category
 from server import app
 from faker import Faker
 from random import randint, sample
 from datetime import datetime
+import json
 
 
 ##################### Seed Products ###########################
@@ -18,23 +19,17 @@ def load_products(filename):
     print "loading products"
 
     f = open(filename)
+
     for line in f:
+        # Each line is a dictionary containing info on a product
         p = eval(line)
 
-        product = Product(asin=p['asin'],
-                          title=p['title'],
-                          price=p.get('price'),
-                          author=p.get('author'),
-                          image=p.get('imUrl'))
-
-        db.session.add(product)
-        db.session.commit()
-
         # categories are stored in double brackets for some weird reason
-        for c in p['categories'][0]:
+        categories = p['categories'][0]
+
+        for c in categories:
             # Loop through each product category, add to the
-            # categories table if it's not there, and add it to the ProductCategories
-            # table also.
+            # categories table if it's not there
 
             n_results = Category.query.filter_by(cat_name=c).count()
 
@@ -43,10 +38,20 @@ def load_products(filename):
                 db.session.add(category)
                 db.session.commit()
 
-            product_category = ProductCategory(asin=p['asin'],
-                                               cat_name=c)
-            db.session.add(product_category)
-            db.session.commit()
+        # Pull out the categories again as a list of Category objects
+        category_objects = Category.query.filter(Category.cat_name.in_(categories)).all()
+
+        # Instantiate a product object
+        product = Product(asin=p['asin'],
+                          title=p['title'],
+                          price=p.get('price'),
+                          author=p.get('author'),
+                          image=p.get('imUrl'),
+                          categories=category_objects)
+
+        db.session.add(product)
+        db.session.commit()
+
 
 
 ##################### Seed Reviews ###########################
@@ -58,38 +63,62 @@ def load_reviews(filename):
     print "loading reviews"
 
     f = open(filename)
+
     for line in f:
+        # Each line is a review for one product in the products table
         r = eval(line)
 
-        # Format the helpful votes.
-        # They are stored in the file as a list of length 2 e.g. [1, 3]
-        # if one out of three people found this review helpful.
-        #
-        # I will store them in the database as total votes (integer)
-        # and the helpful fraction (float)
-        total_votes = r['helpful'][1]
-        helpful_votes = r['helpful'][0]
+        # Only add review if it has a rating
+        if r.get('overall'):
 
-        if total_votes != 0:
-            helpful_fraction = helpful_votes/total_votes
-        else:
-            helpful_fraction = 0
+            # Format the helpful votes.
+            # They are stored in the file as a list of length 2 e.g. [1, 3]
+            # if one out of three people found this review helpful.
+            #
+            # I will store them in the database as total votes (integer)
+            # and the helpful fraction (float)
+            total_votes = r['helpful'][1]
+            helpful_votes = r['helpful'][0]
 
-        review_time = datetime.strptime(r['reviewTime'], '%m %d, %Y')
+            if total_votes != 0:
+                helpful_fraction = helpful_votes/total_votes
+            else:
+                helpful_fraction = 0
 
-        # Create a new review object and add it to the reviews table
-        review = Review(reviewer_id=r['reviewerID'],
-                        reviewer_name=r.get('reviewer_name'),
-                        review=r['reviewText'],
-                        asin=r['asin'],
-                        helpful_total=total_votes,
-                        helpful_fraction=helpful_fraction,
-                        rating=r['overall'],
-                        summary=r['summary'],
-                        time=review_time)
+            review_time = datetime.strptime(r['reviewTime'], '%m %d, %Y')
 
-        db.session.add(review)
+            # Create a new review object and add it to the reviews table
+            review = Review(reviewer_id=r['reviewerID'],
+                            reviewer_name=r.get('reviewer_name'),
+                            review=r['reviewText'],
+                            asin=r['asin'],
+                            helpful_total=total_votes,
+                            helpful_fraction=helpful_fraction,
+                            score=r['overall'],
+                            summary=r['summary'],
+                            time=review_time)
+
+            db.session.add(review)
+
     db.session.commit()
+
+def count_scores():
+    """Calculate score distribution and update product object in db """
+
+    print "======================"
+    print "calculating review distributions"
+
+    for pr in Product.query.all():
+
+        print "==========="
+        print pr
+        # Loop through all products. Calculate the distribution of reviews
+        # and add to the database as a json. Also add the number of reviews
+        score_distribution = pr.calculate_score_distribution()
+        pr.scores = json.dumps(score_distribution)
+        pr.n_scorse = sum(score_distribution.values())
+
+        db.session.commit()
 
 
 ##################### Seed User data ###############################
@@ -150,13 +179,14 @@ if __name__ == "__main__":
     # In case tables haven't been created, create them
     db.create_all()
 
-    # Delete rows from table, so we don't replicate rows if this script is rerun
-    FavoriteProduct.query.delete()
-    User.query.delete()
-    Product.query.delete()
-    Review.query.delete()
+    # # Delete rows from table, so we don't replicate rows if this script is rerun
+    # FavoriteProduct.query.delete()
+    # User.query.delete()
+    # Product.query.delete()
+    # Review.query.delete()
 
     load_products('data/electronics_metadata_subset_clean.json')
     load_reviews('data/electronics_reviews_subset.json')
+    count_scores()
     create_users()
     create_favorite_products()

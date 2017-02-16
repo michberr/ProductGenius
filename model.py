@@ -10,7 +10,7 @@ class User(db.Model):
 
     user_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     name = db.Column(db.Text, nullable=False)
-    email = db.Column(db.Text, nullable=False)
+    email = db.Column(db.Text, nullable=False, unique=True)
     password = db.Column(db.Text, nullable=False)
 
     # Define relationship to favorites
@@ -23,6 +23,13 @@ class User(db.Model):
         return "<User: {} email: {}>".format(self.user_id, self.email)
 
 
+# Many to many linker between products and categories
+product_categories = db.Table('product_categories',
+    db.Column('asin', db.Text, db.ForeignKey('products.asin')),
+    db.Column('cat_name', db.Text, db.ForeignKey('categories.cat_name'))
+)
+
+
 class Product(db.Model):
     """Product object"""
 
@@ -33,24 +40,28 @@ class Product(db.Model):
     price = db.Column(db.Integer)
     author = db.Column(db.Text)
     image = db.Column(db.Text, nullable=False)   # link to image
-    ratings = db.Column(db.Json)    # dictionary with 1-5 star ratings
+    scores = db.Column(db.JSON)    # dictionary with 1-5 star ratings
+    n_scores = db.Column(db.Integer)
 
     categories = db.relationship("Category",
-                                 secondary="ProductCategory",
+                                 secondary=product_categories,
                                  backref=db.backref("products",
-                                                    order_by=asin))
-
+                                                    lazy="dynamic"))
 
     def __repr__(self):
         """Display when printing a Product object"""
 
         return "<Product: {} name: {}>".format(self.asin, self.title)
 
-
-    def calculate_review_distribution():
+    def calculate_score_distribution(self):
         """Calculates the distribution of 1,2,3,4,5 star reviews"""
 
         distribution = {1:0, 2:0, 3:0, 4:0, 5:0}
+
+        for review in self.reviews:
+            distribution[review.score] += 1
+
+        return distribution
 
 
 
@@ -62,11 +73,11 @@ class Review(db.Model):
     review_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     reviewer_id = db.Column(db.Text, nullable=False)
     reviewer_name = db.Column(db.Text)
-    review = db.Column(db.tsquery, nullable=False)
+    review = db.Column(db.Text, nullable=False)
     asin = db.Column(db.Text, db.ForeignKey('products.asin'))
     helpful_total = db.Column(db.Integer)
     helpful_fraction = db.Column(db.Float)
-    rating = db.Column(db.Integer, nullable=False)
+    score = db.Column(db.Integer, nullable=False)
     summary = db.Column(db.Text)
     time = db.Column(db.DateTime)
 
@@ -94,24 +105,6 @@ class Category(db.Model):
         """Display when printing a Category object"""
 
         return "<Category: {}>".format(self.cat_name)
-
-
-class ProductCategory(db.Model):
-    """Link between products and categories"""
-
-    __tablename__ = "product_categories"
-
-    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    asin = db.Column(db.Text, db.ForeignKey('products.asin'), nullable=False)
-    cat_name = db.Column(db.Text, db.ForeignKey('categories.cat_name'), nullable=False)
-
-    def __repr__(self):
-        """Display when printing a Product Category object"""
-
-        return "<ProductCategory: {} asin: {} category: {}>".format(self.id,
-                                                                    self.asin,
-                                                                    self.cat_name)
-
 
 
 class FavoriteProduct(db.Model):
