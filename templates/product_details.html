@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Product Page{% endblock %}
+{% block heading %} {{ product.title }} {% endblock %}
+  
+{% block content %}
+<img src={{ product.image }}>
+
+<!-- # Search bar -->
+<h2>Search within reviews:</h2>
+  <div class="row">
+    <div class="col-md-8 col-md-offset-0">
+      <form class="form-inline" action="/search-review" method="GET">
+        <div class="form-group">
+          <input class="form-control input-lg" name="query" type="text">
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+    </div>
+  </div>
+  <br><br>
+
+<h1>Reviews:</h1>
+  <ul>
+  {% for rev in reviews %}
+    <li>{{ rev.summary }}, Score: {{ rev.score }}, Helpful rating: {{ rev.helpful_fraction }}</li>
+  {% endfor %}
+  </ul>
+{% endblock %}

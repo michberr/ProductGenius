@@ -6,7 +6,7 @@ from jinja2 import StrictUndefined
 
 from indexes import INDEXES
 from model import Product, Review, User, connect_to_db, db
-import sqlalchemy
+from sqlalchemy import desc
 
 app = Flask(__name__)
 
@@ -25,23 +25,21 @@ def display_homepage():
                            indexes=INDEXES)
 
 
-@app.route('/search-product')
+@app.route('/search')
 def search_products():
     """Retrieve data from search form and display product results page."""
 
-    # Will implement a way to use the search index in the future,
-    # but for now, just the query
-    # search_index = request.args.get('search-index')
+    search_index = request.args.get('index')
+    search_query = request.args.get('query')
 
-    search_query = request.args.get('search-query')
+    product_query = Product.query.filter(Product.title.like('%'+search_query+'%'))
 
-    # Only return products that match the search terms and have at least 1 review
-    product_query = Product.query.filter(Product.title.like('%'+search_query+'%'),
-                                         Product.n_scores > 0)
-
-    results = product_query.all()
+    # Join product query with categories to search within an index
+    if search_index != "All":
+        product_query.query.filter(Product.categories.in_(search_index))
 
     if product_query.count() > 0:
+        results = product_query.all()
         return render_template("product_page.html",
                                results=results)
     else:
@@ -58,6 +56,7 @@ def search_reviews():
 @app.route('/user/int<user_id>')
 def display_user_profile():
     """Display user's favorite products and reviews.
+
        User should be able to compare products/reviews side by side.
        Might add functionality to add to the amazon cart via their API
     """
@@ -65,8 +64,8 @@ def display_user_profile():
     pass
 
 
-@app.route('/product/int<asin>')
-def display_productr_profile():
+@app.route('/product/<asin>')
+def display_product_profile(asin):
     """Display a product details page.
 
        Should have a pretty histogram with scores, an emoji/number
@@ -74,18 +73,30 @@ def display_productr_profile():
        returns with an ajax call), and a form to favorite the product.
     """
 
-    pass
+    product = Product.query.filter_by(asin=asin).one()
+    reviews = Review.query.filter_by(asin=asin).order_by(desc(Review.score)).all()
+
+    print product
+    print reviews
+
+    return render_template("product_details.html",
+                           product=product,
+                           reviews=reviews)
 
 ##################### Favorites ################################
 
-@app.route('/favorite-product')
+@app.route('/favorite-product', methods=['POST'])
 def add_favorite_product():
     """Adds a product to a user's favorites"""
 
-    pass
+    asin = request.form.get('asin')
+
+    flash("Product added to favorites")
+
+    return redirect(url_for('.display_product_profile', asin=asin))
 
 
-@app.route('/favorite-review')
+@app.route('/favorite-review', methods=['POST'])
 def add_favorite_review():
     """Adds a review for a product to a user's favorites"""
 

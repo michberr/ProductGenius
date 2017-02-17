@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Product Page{% endblock %}
+{% block title %}Product Results{% endblock %}
 {% block heading %}{% endblock %}
   
 {% block content %}
@@ -8,7 +8,7 @@
 <h1>Products:</h1>
   <ul>
   {% for res in results %}
-    <li>{{ res.title }}, Price: ${{ res.price }}, Number of reviews: {{ res.n_scores }}</li>
+    <li><a href="/product/{{ res.asin }}">{{ res.title }}</a>, Price: ${{ res.price }}, Number of reviews: {{ res.n_scores }}</li>
   {% endfor %}
   </ul>
 {% endblock %}
