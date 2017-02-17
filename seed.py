@@ -8,6 +8,7 @@ from faker import Faker
 from random import randint, sample
 from datetime import datetime
 import json
+from HTMLParser import HTMLParser
 
 
 ##################### Seed Products ###########################
@@ -41,9 +42,18 @@ def load_products(filename):
         # Pull out the categories again as a list of Category objects
         category_objects = Category.query.filter(Category.cat_name.in_(categories)).all()
 
+        title = p.get('title')
+        if title:
+            title = H.unescape(title)
+
+        description = p.get('description')
+        if description:
+            description = H.unescape(description)
+
         # Instantiate a product object
         product = Product(asin=p['asin'],
-                          title=p['title'],
+                          title=title,
+                          description=description,
                           price=p.get('price'),
                           author=p.get('author'),
                           image=p.get('imUrl'),
@@ -68,37 +78,37 @@ def load_reviews(filename):
         # Each line is a review for one product in the products table
         r = eval(line)
 
-        # Only add review if it has a rating
-        if r.get('overall'):
+        # Format the helpful votes.
+        # They are stored in the file as a list of length 2 e.g. [1, 3]
+        # if one out of three people found this review helpful.
+        #
+        # I will store them in the database as total votes (integer)
+        # and the helpful fraction (float)
+        total_votes = r['helpful'][1]
+        helpful_votes = r['helpful'][0]
 
-            # Format the helpful votes.
-            # They are stored in the file as a list of length 2 e.g. [1, 3]
-            # if one out of three people found this review helpful.
-            #
-            # I will store them in the database as total votes (integer)
-            # and the helpful fraction (float)
-            total_votes = r['helpful'][1]
-            helpful_votes = r['helpful'][0]
+        if total_votes != 0:
+            helpful_fraction = helpful_votes/float(total_votes)
+        else:
+            helpful_fraction = 0
 
-            if total_votes != 0:
-                helpful_fraction = helpful_votes/total_votes
-            else:
-                helpful_fraction = 0
+        review_time = datetime.strptime(r['reviewTime'], '%m %d, %Y')
 
-            review_time = datetime.strptime(r['reviewTime'], '%m %d, %Y')
+        summary = H.unescape(r['summary'])
+        review = H.unescape(r['reviewText'])
 
-            # Create a new review object and add it to the reviews table
-            review = Review(reviewer_id=r['reviewerID'],
-                            reviewer_name=r.get('reviewer_name'),
-                            review=r['reviewText'],
-                            asin=r['asin'],
-                            helpful_total=total_votes,
-                            helpful_fraction=helpful_fraction,
-                            score=r['overall'],
-                            summary=r['summary'],
-                            time=review_time)
+        # Create a new review object and add it to the reviews table
+        review = Review(reviewer_id=r['reviewerID'],
+                        reviewer_name=r.get('reviewer_name'),
+                        review=r['reviewText'],
+                        asin=r['asin'],
+                        helpful_total=total_votes,
+                        helpful_fraction=helpful_fraction,
+                        score=r['overall'],
+                        summary=r['summary'],
+                        time=review_time)
 
-            db.session.add(review)
+        db.session.add(review)
 
     db.session.commit()
 
@@ -110,13 +120,11 @@ def count_scores():
 
     for pr in Product.query.all():
 
-        print "==========="
-        print pr
         # Loop through all products. Calculate the distribution of reviews
         # and add to the database as a json. Also add the number of reviews
         score_distribution = pr.calculate_score_distribution()
         pr.scores = json.dumps(score_distribution)
-        pr.n_scorse = sum(score_distribution.values())
+        pr.n_scores = sum(score_distribution.values())
 
         db.session.commit()
 
@@ -185,7 +193,9 @@ if __name__ == "__main__":
     # Product.query.delete()
     # Review.query.delete()
 
-    load_products('data/electronics_metadata_subset_clean.json')
+    H = HTMLParser()
+
+    load_products('data/electronics_metadata_subset.json')
     load_reviews('data/electronics_reviews_subset.json')
     count_scores()
     create_users()

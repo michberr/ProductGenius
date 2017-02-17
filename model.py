@@ -36,8 +36,9 @@ class Product(db.Model):
     __tablename__ = "products"
 
     asin = db.Column(db.Text, primary_key=True)
-    title = db.Column(db.Text, nullable=False)
-    price = db.Column(db.Integer)
+    title = db.Column(db.Text)
+    description = db.Column(db.Text)
+    price = db.Column(db.Float)
     author = db.Column(db.Text)
     image = db.Column(db.Text, nullable=False)   # link to image
     scores = db.Column(db.JSON)    # dictionary with 1-5 star ratings
