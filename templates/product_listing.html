@@ -7,8 +7,8 @@
 
 <h1>Products:</h1>
   <ul>
-  {% for res in results %}
-    <li><a href="/product/{{ res.asin }}">{{ res.title }}</a>, Price: ${{ res.price }}, Number of reviews: {{ res.n_scores }}</li>
+  {% for pr in products %}
+    <li><a href="/product/{{ pr[0] }}">{{ pr[1] }}</a>, Price: ${{ pr[3] }}, Number of reviews: {{ pr[7] }}</li>
   {% endfor %}
   </ul>
 {% endblock %}

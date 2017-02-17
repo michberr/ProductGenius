@@ -5,7 +5,7 @@ INDEXES = [
     'Camera & Photo',
     'Car & Vehicle Electronics',
     'Cases',
-    'Cell Phones'
+    'Cell Phones',
     'Computers & Accessories',
     'GPS & Navigation',
     'eBook Readers & Accessories',

@@ -29,19 +29,34 @@ def display_homepage():
 def search_products():
     """Retrieve data from search form and display product results page."""
 
-    search_index = request.args.get('index')
     search_query = request.args.get('query')
 
-    product_query = Product.query.filter(Product.title.like('%'+search_query+'%'))
+    # Not using search categories for now
+    # search_index = request.args.get('index')
 
-    # Join product query with categories to search within an index
-    if search_index != "All":
-        product_query.query.filter(Product.categories.in_(search_index))
+    # SQL statement to select products that match the search query
+    # ranked in order of relevancy
+    sql = """SELECT *, ts_rank(product_search.product_info,
+                to_tsquery('english', :search_terms)) AS relevancy
+             FROM (SELECT *,
+                    setweight(to_tsvector('english', title), 'A') ||
+                    setweight(to_tsvector('english', description), 'B') AS product_info
+             FROM products) product_search
+             WHERE product_search.product_info @@ to_tsquery('english', :search_terms)
+             ORDER BY relevancy DESC;
+          """
 
-    if product_query.count() > 0:
-        results = product_query.all()
-        return render_template("product_page.html",
-                               results=results)
+    cursor = db.session.execute(sql,
+                                {'search_terms': search_query})
+
+    # Returns a list with the top ten products
+    products = cursor.fetchmany(10)
+
+
+    # If there are matching products, return the listings
+    if len(products) > 0:
+        return render_template("product_listing.html",
+                               products=products)
     else:
         return render_template("no_products.html")
 
