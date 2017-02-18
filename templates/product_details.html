@@ -20,6 +20,29 @@
   </div>
   <br><br>
 
+<!-- Histogram -->
+
+<div class="product-histogram">
+  <canvas id="barChart"></canvas>
+<div>
+
+<script>
+  
+  var options = { responsive: true };
+
+  var ctx_bar = $("#barChart").get(0).getContext("2d");
+
+  $.get("/product-reviews/{{ product.asin }}.json", function(data) {
+      var myBarChart = new Chart(ctx_bar, {
+          type: 'bar',
+          data: data,
+          options: options
+      });
+  });
+
+</script>
+
+<!-- Reviews -->
 <h1>Reviews:</h1>
   <ul>
   {% for rev in reviews %}

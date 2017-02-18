@@ -1,40 +1,54 @@
 <!doctype html>
 <html>
 
- <!-- This is where the title goes. -->
- <head>
+  <head>
+    <!-- This is where the title goes -->
     <title>{% block title %}TITLE HERE{% endblock %}</title>
+
+    <!-- Link to bootstrap as stylesheet -->
     <link rel="stylesheet"
         href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.css"/>
+    
+    <!-- Link to css -->
     <link rel="stylesheet" href="static/styles.css">
+    
+    <!-- This is where the heading goes -->
     <div class="row">
       <div class="col-xs-12 text-center page-title">
         <h1>{% block heading %}HEADING FOR PAGE{% endblock %}</h1>
       </div>
     </div>
     <br><br>
+
     <!-- Link to jquery -->
     <script src="https://code.jquery.com/jquery.js"></script>
+
+    <!-- Link to bootstrap js -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <!-- Link to Chart.js -->
+    <script src=
+  "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.2.1/Chart.js">
+</script>
+
   </head>
 
+  <!-- This is where the body goes -->
   <body>
 
-  <!-- Show flashed messages -->
-  {% with messages = get_flashed_messages() %}
-    {% for message in messages %}
-      <div class="alert alert-warning text-center">{{ message }}</div>
-    {% endfor %}
-  {% endwith %}
+    <!-- Show flashed messages -->
+    {% with messages = get_flashed_messages() %}
+      {% for message in messages %}
+        <div class="alert alert-warning text-center">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
 
-  <!-- This is where the main content goes. -->
+    <!-- This is where the main content goes. -->
     <div class="container">
       {% block content %}
         BODY OF PAGE GOES HERE 
       {% endblock %}
     </div>
-  
-    <!-- Link to bootstrap js -->
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
   
   </body>
 
@@ -47,4 +61,5 @@
       </div>
     </div>
   </footer>
+
 </html>
