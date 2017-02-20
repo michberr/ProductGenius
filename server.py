@@ -32,6 +32,10 @@ def search_products():
 
     search_query = request.args.get('query')
 
+    # If the search_query is more than one word, add in a &
+    words = search_query.strip().split(' ')
+    search_formatted = ' & '.join(words)
+
     # Not using search categories for now
     # search_index = request.args.get('index')
 
@@ -48,7 +52,7 @@ def search_products():
           """
 
     cursor = db.session.execute(sql,
-                                {'search_terms': search_query})
+                                {'search_terms': search_formatted})
 
     # Returns a list with the top ten products
     products = cursor.fetchmany(10)
