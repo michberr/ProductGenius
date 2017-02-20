@@ -5,7 +5,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from jinja2 import StrictUndefined
 
 from indexes import INDEXES
-from model import Product, Review, User, connect_to_db, db
+from model import Product, Review, User, Category, connect_to_db, db
 from sqlalchemy import desc
 import json
 
@@ -31,31 +31,57 @@ def search_products():
     """Retrieve data from search form and display product results page."""
 
     search_query = request.args.get('query')
+    search_index = request.args.get('index')
+
+    print search_query
+    print search_index
 
     # If the search_query is more than one word, add in a &
     words = search_query.strip().split(' ')
     search_formatted = ' & '.join(words)
 
-    # Not using search categories for now
-    # search_index = request.args.get('index')
+    if search_index != "All":
 
-    # SQL statement to select products that match the search query
-    # ranked in order of relevancy
-    sql = """SELECT *, ts_rank(product_search.product_info,
+        # SQL statement to select products that match the search query
+        # ranked in order of relevancy
+        sql = """SELECT *, ts_rank(product_search.product_info,
                 to_tsquery('english', :search_terms)) AS relevancy
-             FROM (SELECT *,
+                FROM (SELECT *,
                     setweight(to_tsvector('english', title), 'A') ||
                     setweight(to_tsvector('english', description), 'B') AS product_info
-             FROM products) product_search
-             WHERE product_search.product_info @@ to_tsquery('english', :search_terms)
-             ORDER BY relevancy DESC;
-          """
+                FROM products) product_search
+                WHERE product_search.product_info @@ to_tsquery('english', :search_terms) AND
+                asin IN
+                    (SELECT p.asin
+                        FROM categories as c
+                        INNER JOIN product_categories as pc
+                        ON c.cat_name=pc.cat_name
+                        INNER JOIN products as p
+                        ON pc.asin=p.asin
+                        WHERE pc.cat_name = :category)
+                ORDER BY relevancy DESC;
+              """
+    else:
+        # SQL statement to select products that match the search query
+        # ranked in order of relevancy
+        sql = """SELECT *, ts_rank(product_search.product_info,
+                to_tsquery('english', :search_terms)) AS relevancy
+                FROM (SELECT *,
+                    setweight(to_tsvector('english', title), 'A') ||
+                    setweight(to_tsvector('english', description), 'B') AS product_info
+                FROM products) product_search
+                WHERE product_search.product_info @@ to_tsquery('english', :search_terms)
+                ORDER BY relevancy DESC;
+              """
 
     cursor = db.session.execute(sql,
-                                {'search_terms': search_formatted})
+                                {'search_terms': search_formatted,
+                                 'category': search_index})
 
     # Returns a list with the top ten products
     products = cursor.fetchmany(10)
+
+    print products
 
 
     # If there are matching products, return the listings
