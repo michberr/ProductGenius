@@ -1,4 +1,4 @@
-# ReviewGenius
+# Product Genius
 
 ### Final Hackbright project:
 
