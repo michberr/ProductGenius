@@ -3,16 +3,15 @@
 from flask import Flask, render_template, redirect, request, flash, session, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from jinja2 import StrictUndefined
-
 from indexes import INDEXES
 from model import Product, Review, User, Category, connect_to_db, db
 from sqlalchemy import desc
-import json
+from product_genius import find_products, get_scores, get_chart_data, find_reviews
 
 app = Flask(__name__)
 
 # Required to use Flask sessions and the debug toolbar
-app.secret_key = "ReviewGenius"
+app.secret_key = "ProductGenius"
 
 # Jinja2 should raise error if it encounters an undefined variable
 app.jinja_env.undefined = StrictUndefined
@@ -33,58 +32,14 @@ def search_products():
     search_query = request.args.get('query')
     search_index = request.args.get('index')
 
-    print search_query
-    print search_index
-
-    # If the search_query is more than one word, add in a &
+    # If the search_query is more than one word,
+    # need to format the query for sql with a '&' in between words
     words = search_query.strip().split(' ')
     search_formatted = ' & '.join(words)
 
-    if search_index != "All":
+    # Retrieve products from db that match search_query within search_index
+    products = find_products(search_formatted, search_index)
 
-        # SQL statement to select products that match the search query
-        # ranked in order of relevancy
-        sql = """SELECT *, ts_rank(product_search.product_info,
-                to_tsquery('english', :search_terms)) AS relevancy
-                FROM (SELECT *,
-                    setweight(to_tsvector('english', title), 'A') ||
-                    setweight(to_tsvector('english', description), 'B') AS product_info
-                FROM products) product_search
-                WHERE product_search.product_info @@ to_tsquery('english', :search_terms) AND
-                asin IN
-                    (SELECT p.asin
-                        FROM categories as c
-                        INNER JOIN product_categories as pc
-                        ON c.cat_name=pc.cat_name
-                        INNER JOIN products as p
-                        ON pc.asin=p.asin
-                        WHERE pc.cat_name = :category)
-                ORDER BY relevancy DESC;
-              """
-    else:
-        # SQL statement to select products that match the search query
-        # ranked in order of relevancy
-        sql = """SELECT *, ts_rank(product_search.product_info,
-                to_tsquery('english', :search_terms)) AS relevancy
-                FROM (SELECT *,
-                    setweight(to_tsvector('english', title), 'A') ||
-                    setweight(to_tsvector('english', description), 'B') AS product_info
-                FROM products) product_search
-                WHERE product_search.product_info @@ to_tsquery('english', :search_terms)
-                ORDER BY relevancy DESC;
-              """
-
-    cursor = db.session.execute(sql,
-                                {'search_terms': search_formatted,
-                                 'category': search_index})
-
-    # Returns a list with the top ten products
-    products = cursor.fetchmany(10)
-
-    print products
-
-
-    # If there are matching products, return the listings
     if len(products) > 0:
         return render_template("product_listing.html",
                                products=products)
@@ -92,48 +47,36 @@ def search_products():
         return render_template("no_products.html")
 
 
-@app.route('/product-reviews/<asin>.json')
+@app.route('/product-scores/<asin>.json')
 def product_reviews_data(asin):
-    """Return data about product reviews for chart."""
+    """Return data about product reviews for histogram."""
 
-    scores = Product.query.filter_by(asin=asin).one().scores
-
-    scores = json.loads(scores)
-
-    score_list = [scores["1"], scores["2"], scores["3"], scores["4"], scores["5"]]
-
-    data_dict = {
-                "labels": ["1", "2", "3", "4", "5"],
-                "datasets": [
-                    {
-                        "label": "Customer Ratings",
-                        "data": score_list,
-                        "backgroundColor": [
-                            'rgba(255, 99, 132, 0.6)',
-                            'rgba(54, 162, 235, 0.6)',
-                            'rgba(255, 206, 86, 0.6)',
-                            'rgba(75, 192, 192, 0.6)',
-                            'rgba(153, 102, 255, 0.6)'
-                        ],
-                        "hoverBackgroundColor": [
-                            'rgba(255,99,132,1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)'
-                        ],
-                        "borderWidth": 5
-                    }]
-            }
+    score_list = get_scores(asin)
+    data_dict = get_chart_data(score_list)
 
     return jsonify(data_dict)
 
 
-@app.route('/search-review')
+@app.route('/search-review/<asin>.json')
 def search_reviews():
-    """Search through reviews for a product and display the results"""
+    """Perform full-text search within product reviews.
+       Returns the matching reviews via json to the front end.
+    """
 
-    pass
+    search_query = request.args.get('query')
+
+    # If the search_query is more than one word,
+    # need to format the query for sql with a '&' in between words
+    words = search_query.strip().split(' ')
+    search_formatted = ' & '.join(words)
+
+    # Full-text search within a products reviews
+    reviews = find_reviews(asin, search_formatted)
+
+    # Return reviews as json
+    return jsonify(reviews)
+
+
 
 
 @app.route('/user/int<user_id>')
@@ -162,6 +105,7 @@ def display_product_profile(asin):
     return render_template("product_details.html",
                            product=product,
                            reviews=reviews)
+
 
 ##################### Favorites ################################
 
