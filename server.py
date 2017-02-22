@@ -7,6 +7,7 @@ from indexes import INDEXES
 from model import Product, Review, User, Category, connect_to_db, db
 from sqlalchemy import desc
 from product_genius import find_products, get_scores, get_chart_data, find_reviews
+import collections
 
 app = Flask(__name__)
 
@@ -64,19 +65,19 @@ def search_reviews(asin):
     # Returns a list of review tuples.
     reviews = find_reviews(asin, search_query)
 
-    # Reformat review tuples into a dictionary
-    reviews_dict = {}
+    # Need to reformat into a list of review dictionaries
+    review_dict_list = []
 
     for rev in reviews:
-        reviews_dict[rev[0]] = {
-            "reviewer_name": rev[2],
-            "review": rev[3],
-            "summary": rev[8],
-            "score": rev[7],
-            "time": rev[9]
-        }
+        d = collections.OrderedDict()
+        d["reviewer_name"] = rev[2]
+        d["review"] = rev[3]
+        d["summary"] = rev[8]
+        d["score"] = rev[7]
+        d["time"] = rev[9]
+        review_dict_list.append(d)
 
-    return jsonify(reviews_dict)
+    return jsonify(review_dict_list)
 
 
 @app.route('/product/<asin>')
