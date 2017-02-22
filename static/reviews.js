@@ -1,7 +1,7 @@
 "use strict";
 
 // Replace existing html with new html that contains 
-// just reviews in user search, with query highlighted
+// just reviews in user's search, with their query highlighted
 function displayReviews(results) {
 
     var review_html = "";
@@ -17,7 +17,8 @@ function displayReviews(results) {
     $("#reviews").html(review_html);
 
     // Highlight the word in the review
-    $('li').highlight('bass');
+    var query = $("#query").val();
+    $('li').highlight(query);
 
 }
 
