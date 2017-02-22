@@ -14,38 +14,43 @@
   <canvas id="barChart"></canvas>
 <div>
 
-<script> var asin = "{{ product.asin }}";</script>
-<script type="text/javascript" src="/static/histogram.js"></script>
-
-
 <!-- # Review search bar -->
 
 <h2>Search within reviews:</h2>
 <div class="row">
   <div class="col-md-8 col-md-offset-0">
-    <form class="form-inline" action="/search-review" id="review-search" method="GET">
+    <form class="form-inline" action="/search-review" id="review-search-form" method="GET">
       <div class="form-group">
-        <input class="form-control input-lg" name="query" type="text">
+        <input class="form-control input-lg" name="query" id="query" type="text">
       </div>
       <button type="submit" class="btn btn-primary">Search</button>
     </form>
   </div>
 </div>
 
-
 <!-- Review display -->
 
 <h1>Reviews:</h1>
 <div id="reviews">
-  <ul>
   {% for rev in reviews %}
-    <li>{{ rev.summary }}, 
-        Score: {{ rev.score }}, 
-        Helpful rating: {{ rev.helpful_fraction }}
-    </li>
+    <h3>{{ rev.summary }}</h3>
+    <ul>
+      <li>Score: {{ rev.score }}</li>
+      <li>Helpful rating: {{ rev.helpful_fraction }}</li>
+      <li>{{ rev.review }}</li>
+    </ul>
   {% endfor %}
-  </ul>
 </div>
 
+<!-- Javascript links -->
+
+<!-- Pass the product's asin to javascript files -->
+<script> var asin = "{{ product.asin }}";</script>
+<script src="/static/histogram.js"></script>
+<script src="/static/reviews.js"></script>
+
+
 {% endblock %}
+
+
 

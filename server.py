@@ -32,13 +32,8 @@ def search_products():
     search_query = request.args.get('query')
     search_index = request.args.get('index')
 
-    # If the search_query is more than one word,
-    # need to format the query for sql with a '&' in between words
-    words = search_query.strip().split(' ')
-    search_formatted = ' & '.join(words)
-
     # Retrieve products from db that match search_query within search_index
-    products = find_products(search_formatted, search_index)
+    products = find_products(search_query, search_index)
 
     if len(products) > 0:
         return render_template("product_listing.html",
@@ -58,45 +53,39 @@ def product_reviews_data(asin):
 
 
 @app.route('/search-review/<asin>.json')
-def search_reviews():
+def search_reviews(asin):
     """Perform full-text search within product reviews.
        Returns the matching reviews via json to the front end.
     """
 
     search_query = request.args.get('query')
 
-    # If the search_query is more than one word,
-    # need to format the query for sql with a '&' in between words
-    words = search_query.strip().split(' ')
-    search_formatted = ' & '.join(words)
+    # Run full-text search within a product's reviews
+    # Returns a list of review tuples.
+    reviews = find_reviews(asin, search_query)
 
-    # Full-text search within a products reviews
-    reviews = find_reviews(asin, search_formatted)
+    # Reformat review tuples into a dictionary
+    reviews_dict = {}
 
-    # Return reviews as json
-    return jsonify(reviews)
+    for rev in reviews:
+        reviews_dict[rev[0]] = {
+            "reviewer_name": rev[2],
+            "review": rev[3],
+            "summary": rev[8],
+            "score": rev[7],
+            "time": rev[9]
+        }
 
-
-
-
-@app.route('/user/int<user_id>')
-def display_user_profile():
-    """Display user's favorite products and reviews.
-
-       User should be able to compare products/reviews side by side.
-       Might add functionality to add to the amazon cart via their API
-    """
-
-    pass
+    return jsonify(reviews_dict)
 
 
 @app.route('/product/<asin>')
 def display_product_profile(asin):
     """Display a product details page.
 
-       Should have a pretty histogram with scores, an emoji/number
-       for wilson's ranking, reviews, a search bar for reviews (that
-       returns with an ajax call), and a form to favorite the product.
+       Should have a pretty histogram with scores, a product rating
+       built from bayesian logic, the product's reviews, a search bar for
+       reviews (that returns w/ ajax), and a form to favorite the product.
     """
 
     product = Product.query.filter_by(asin=asin).one()
@@ -108,6 +97,17 @@ def display_product_profile(asin):
 
 
 ##################### Favorites ################################
+
+@app.route('/user/int<user_id>')
+def display_user_profile():
+    """Display user's favorite products and reviews.
+
+       User should be able to compare products/reviews side by side.
+       Might add functionality to add to the amazon cart via their API
+    """
+
+    pass
+
 
 @app.route('/favorite-product', methods=['POST'])
 def add_favorite_product():

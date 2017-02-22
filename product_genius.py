@@ -2,7 +2,7 @@ from model import Product, connect_to_db, db
 import json
 
 
-def find_products(search_query, search_index):
+def find_products(query, index):
     """Queries database to find products within a search index based on user's search.
 
        This full-text search in postgres stems, removes stop words, applies weights
@@ -14,7 +14,12 @@ def find_products(search_query, search_index):
        a cutoff for how relevant a product has to be to return.
     """
 
-    if search_index == "All":
+    # If the search_query is more than one word,
+    # need to format the query for sql with a '&' in between words
+    words = query.strip().split(' ')
+    search_formatted = ' & '.join(words)
+
+    if index == "All":
 
         sql = """SELECT *, ts_rank(product_search.product_info,
                 to_tsquery('english', :search_terms)) AS relevancy
@@ -48,12 +53,12 @@ def find_products(search_query, search_index):
               """
 
     cursor = db.session.execute(sql,
-                                {'search_terms': search_query,
-                                 'category': search_index})
+                                {'search_terms': search_formatted,
+                                 'category': index})
 
-    # Returns a list with the top ten products
-    products = cursor.fetchmany(10)
+    products = cursor.fetchall()
 
+    # Returns a list of product tuples
     return products
 
 
@@ -106,7 +111,7 @@ def find_reviews(asin, query):
     """Queries database to find product reviews based on user's search.
 
        This full-text search in postgres stems, removes stop words, applies weights
-       to different fields (review summary is more important than the review text), 
+       to different fields (review summary is more important than the review text),
        and ranks the results by relevancy.
 
        Currently, the default weights in ts_rank() are used, which is 1 for 'A'
@@ -114,7 +119,12 @@ def find_reviews(asin, query):
        a cutoff for how relevant a review has to be to return.
     """
 
-    sql = """SELECT *, ts_rank(review_search.review_info,
+    # If the search_query is more than one word,
+    # need to format the query for sql with a '&' in between words
+    words = query.strip().split(' ')
+    search_formatted = ' & '.join(words)
+
+    sql = """SELECT *, ts_rank(array[0, 0, 0.8, 1], review_search.review_info,
                 to_tsquery('english', :search_terms)) AS relevancy
                 FROM (SELECT *,
                     setweight(to_tsvector('english', summary), 'A') ||
@@ -126,7 +136,7 @@ def find_reviews(asin, query):
               """
 
     cursor = db.session.execute(sql,
-                                   {'search_terms': query,
+                                   {'search_terms': search_formatted,
                                     'asin': asin})
 
     reviews = cursor.fetchall()
