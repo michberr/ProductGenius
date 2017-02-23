@@ -50,11 +50,12 @@
             <button type="submit" class="btn btn-default">Search</button>
           </form>
           <ul class="nav navbar-nav navbar-right">
-            {% if 'user_id' in session %}
-              <li><a href="/login">Login</a></li>
-              <li><a href="/register">Register</a></li>
+            {% if 'user' in session %}
+              <li><p class="navbar-text">Logged in as {{ session['user']['name'] }}</p></li>
+              <li><a href="/logout">Logout</a></li>
             {% else %}
               <li><a href="/login">Login</a></li>
+              <li><a href="/register">Register</a></li>
             {% endif %}
           </ul>
         </div><!-- /.navbar-collapse -->

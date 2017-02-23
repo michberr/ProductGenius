@@ -7,7 +7,9 @@ from indexes import INDEXES
 from model import Product, Review, User, Category, connect_to_db, db
 from sqlalchemy import desc
 from product_genius import find_products, get_scores, get_chart_data, find_reviews
+from product_genius import register_user
 import collections
+import sqlalchemy
 
 app = Flask(__name__)
 
@@ -65,7 +67,7 @@ def search_reviews(asin):
     # Returns a list of review tuples.
     reviews = find_reviews(asin, search_query)
 
-    # Need to reformat into a list of review dictionaries
+    # Need to reformat into a list of review ordered dictionaries
     review_dict_list = []
 
     for rev in reviews:
@@ -114,11 +116,7 @@ def display_user_profile():
 def add_favorite_product():
     """Adds a product to a user's favorites"""
 
-    asin = request.form.get('asin')
-
-    flash("Product added to favorites")
-
-    return redirect(url_for('.display_product_profile', asin=asin))
+    pass
 
 
 @app.route('/favorite-review', methods=['POST'])
@@ -131,25 +129,75 @@ def add_favorite_review():
 
 ################# Login, logout, and registration ###############
 
-@app.route('/register')
-def register_user():
-    """Registers a new user"""
+@app.route('/register', methods=["GET"])
+def display_registration():
+    """Display register form"""
 
-    pass
+    return render_template("register_form.html")
 
 
-@app.route('/login')
-def login():
-    """Logs a registered user into the app"""
+@app.route('/register', methods=["POST"])
+def process_registration():
+    """Process a new user's' registration form"""
 
-    pass
+    # Grab inputs from registration form
+    name = request.form.get('name')
+    email = request.form.get('email')
+    password = request.form.get('password')
+
+    message = register_user(name, email, password)
+
+    flash(message)
+
+    return redirect("/login")
+
+
+@app.route('/login', methods=["GET"])
+def display_login():
+    """Display login form"""
+
+    return render_template('login_form.html')
+
+
+@app.route('/login', methods=["POST"])
+def log_in():
+    """Log user in"""
+
+    email = request.form.get('email')
+    password = request.form.get('password')
+
+    # Fetch user from db
+    user_query = User.query.filter_by(email=email)
+
+    # Check if user exists
+    if user_query.count() == 0:
+        flash("No account exists for that email")
+        return redirect("/")
+
+    user = user_query.one()
+
+    # Check if password is correct
+    if user.password == password:
+
+        # Add user to session cookie
+        session['user'] = {"id": user.user_id,
+                           "name": user.name}
+
+        return redirect("/")
+
+    else:
+        flash("Incorrect password")
+        return redirect("/login")
 
 
 @app.route('/logout')
-def logout():
-    """Logs a registered user out of the app"""
+def log_out():
+    """Log user out"""
 
-    pass
+    # Remove user from session
+    del session['user']
+
+    return redirect("/")
 
 
 

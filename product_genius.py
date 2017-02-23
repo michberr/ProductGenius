@@ -1,4 +1,4 @@
-from model import Product, connect_to_db, db
+from model import Product, User, connect_to_db, db
 import json
 
 
@@ -142,3 +142,26 @@ def find_reviews(asin, query):
     reviews = cursor.fetchall()
 
     return reviews
+
+
+def register_user(name, email, password):
+    """Register a new user and return a message to flash"""
+
+    # If user exists, flash an error message
+    if User.query.filter_by(email=email).count() != 0:
+        return "That email already exists. Please login or register for a new account"
+
+    else:
+        user = User(name=name,
+                    email=email,
+                    password=password)
+
+        # Add user to the session
+        db.session.add(user)
+
+        # Commit transaction to db
+        db.session.commit()
+
+        return "Welcome to Product Genius"
+
+ 
