@@ -1,40 +1,35 @@
 {% extends 'base.html' %}
 
-{% block title %}Review Genius Home Page{% endblock %}
-{% block heading %}ReviewGenius{% endblock %}
-  
+
 {% block content %}
+
+  <div class="row">
+    <div class="col-xs-12 text-center page-title">
+      <h1>ProductGenius</h1>
+      <br>
+      <h3>Get the best information before you buy</h3>
+      <br>
+    </div>
+  </div>
 
   <!-- # Search bar -->
   <div class="row">
     <div class="col-md-8 col-md-offset-2 text-center">
-      <form class="form-inline" action="/search" method="GET">
-        <div class="form-group">
-          <input class="form-control input-lg" name="query" type="text" 
-            placeholder="Search for a product">
-        </div>
-        <div class="form-group">
+      <form action="/search" method="GET">
+        <div class="form-inline">
+          <input class="form-control input-lg" name="query" type="text" placeholder="Search for a product">
           <select class="form-control" name="index"> 
             {% for idx in indexes %}
               <option value="{{ idx }}">{{ idx }}</option>
             {% endfor %}
           </select>
         </div>
-        <button type="submit" class="btn btn-primary">Search</button>
+        <br>
+        <div class="form-group">
+          <button type="submit" class="btn btn-primary">Search</button>
+        </div>
       </form>
     </div>
   </div>
-  <br><br>
 
-  <!-- Register and login buttons -->
-  <div class="row">
-    <div class="col-xs-4 col-xs-offset-4 text-center">
-      <a class="btn btn-default" href="/register" role="button">
-        Register
-      </a>
-      <a class="btn btn-default" href="/login" role="button">
-        Log In
-      </a>
-    </div>
-  </div>
 {% endblock %}
