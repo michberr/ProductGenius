@@ -1,31 +1,35 @@
 {% extends 'base.html' %}
-
-{% block title %}Product Results{% endblock %}
-{% block heading %}{% endblock %}
   
 {% block content %}
 
+<div id="search-term">
+  <h2>You searched for "{{ query }}"</h2>
+</div>
+<br>
 <h1>Products:</h1>
 <br><br>
 
   {% for pr in products[:10] %}
     <div class="product">
 
-        <div class="product-title">
-            <h3><a href="/product/{{ pr[0] }}">{{ pr[1] }}</a></h3>
-        </div>
+      <div class="product-title">
+        <h3><a href="/product/{{ pr[0] }}">{{ pr[1] }}</a></h3>
+      </div>
 
-        <div class="product-img">
-            <a href="/product/{{ pr[0] }}">
-                <img src="{{ pr[5] }}">
-            </a>
-        </div>
+      <div id="product-img">
+        <a href="/product/{{ pr[0] }}">
+          <img src="{{ pr[5] }}">
+        </a>
+      </div>
 
+      <div id="product-details">
         <div class="product-price">Price: ${{ pr[3] }}</div>
         <div class="nreviews">{{ pr[7] }} reviews</div>
         <div class="productgenius-score">ProductGenius Score: </div>
-
+      </div>
+    
     </div>
+    <br>
   {% endfor %}
 
 {% endblock %}

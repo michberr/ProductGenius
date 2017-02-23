@@ -1,4 +1,56 @@
 .highlight { 
-    background-color: #00E5EE; 
+    background-color: #c7ffff; 
 }
 
+#product-img {
+    float: left;
+    width: 500px;
+    padding: 40px;
+}
+
+#product-details {
+    font-size: 30px;
+    float: left;
+    width: 500px;
+    padding: 40px;
+    font-family: Avenir;
+}
+
+.product {
+    background-color: white;
+    padding: 20px; 
+    width: 1200px;
+    height: 500px;
+    font-family: Avenir;
+}
+
+body { 
+    padding-top: 70px; 
+    background-image: url("/static/background.jpg");
+    font-family: Avenir;
+    color: black;
+}
+
+#search-term {
+    color: black;
+}
+
+/* unvisited link */
+a:link {
+    color: black;
+}
+
+/* visited link */
+a:visited {
+    color: grey;
+}
+
+/* mouse over link */
+a:hover {
+    color: hotpink;
+}
+
+#product-page {
+    background-color: white;
+    padding: 100px;
+}
