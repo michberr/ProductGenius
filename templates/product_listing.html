@@ -6,9 +6,26 @@
 {% block content %}
 
 <h1>Products:</h1>
-  <ul>
-  {% for pr in products %}
-    <li><a href="/product/{{ pr[0] }}">{{ pr[1] }}</a>, Price: ${{ pr[3] }}, Number of reviews: {{ pr[7] }}</li>
+<br><br>
+
+  {% for pr in products[:10] %}
+    <div class="product">
+
+        <div class="product-title">
+            <h3><a href="/product/{{ pr[0] }}">{{ pr[1] }}</a></h3>
+        </div>
+
+        <div class="product-img">
+            <a href="/product/{{ pr[0] }}">
+                <img src="{{ pr[5] }}">
+            </a>
+        </div>
+
+        <div class="product-price">Price: ${{ pr[3] }}</div>
+        <div class="nreviews">{{ pr[7] }} reviews</div>
+        <div class="productgenius-score">ProductGenius Score: </div>
+
+    </div>
   {% endfor %}
-  </ul>
+
 {% endblock %}

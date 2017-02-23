@@ -1,19 +1,18 @@
 {% extends 'base.html' %}
-
-{% block title %}Product Page{% endblock %}
-{% block heading %} {{ product.title }} {% endblock %}
   
 {% block content %}
 
-<img src={{ product.image }}>
+<h1>{{ product.title }}</h1>
+
+<div>
+  <img src={{ product.image }}> 
+  <div class="product-histogram">
+    <canvas id="barChart"></canvas>
+  <div>
+</div>
+
 <br><br>
 
-
-<!-- Score Histogram -->
-
-<div class="product-histogram">
-  <canvas id="barChart"></canvas>
-<div>
 
 <!-- # Review search bar -->
 
