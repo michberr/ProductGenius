@@ -8,12 +8,11 @@
     padding: 40px;
 }
 
-#product-details {
+#product-listing {
     font-size: 30px;
     float: left;
     width: 500px;
     padding: 40px;
-    font-family: Avenir;
 }
 
 .product {
@@ -21,14 +20,18 @@
     padding: 20px; 
     width: 1200px;
     height: 500px;
-    font-family: Avenir;
 }
 
 body { 
     padding-top: 70px; 
-    background-image: url("/static/background.jpg");
     font-family: Avenir;
     color: black;
+    background-color: #d3d3d3;
+}
+
+.navbar {
+    font-size: 24px;
+    padding: 5px;
 }
 
 #search-term {
@@ -50,7 +53,6 @@ a:hover {
     color: hotpink;
 }
 
-#product-page {
-    background-color: white;
-    padding: 100px;
+.product-histogram {
+    padding-top: 80px;
 }
