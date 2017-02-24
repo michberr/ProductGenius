@@ -42,7 +42,11 @@
         <h3>{{ rev.summary }}</h3>
 
         {% if "user" in session %}
-            <img src="/static/heart-empty.jpg" class="heart" id={{ rev.review_id }} height="35" width="35" data-review-id={{ rev.review_id }}>
+          {% if rev.review_id in favorites %}
+            <img src="/static/heart.png" class="heart" height="35" width="35" data-review-id={{ rev.review_id }}>
+          {% else %}
+            <img src="/static/heart-empty.jpg" class="heart" height="35" width="35" data-review-id={{ rev.review_id }}>
+          {% endif %}
         {% endif %}
 
         <ul>

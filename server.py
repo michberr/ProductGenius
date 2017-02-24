@@ -4,11 +4,10 @@ from flask import Flask, render_template, redirect, request, flash, session, jso
 from flask_debugtoolbar import DebugToolbarExtension
 from jinja2 import StrictUndefined
 from indexes import INDEXES
-from model import Product, Review, User, Category, connect_to_db, db
+from model import Product, Review, User, Category, FavoriteReview, connect_to_db, db
 from sqlalchemy import desc
 from product_genius import find_products, get_scores, get_chart_data, find_reviews
 from product_genius import register_user, update_favorite_review
-import collections
 import sqlalchemy
 
 app = Flask(__name__)
@@ -72,12 +71,12 @@ def search_reviews(asin):
     review_dict_list = []
 
     for rev in reviews:
-        d = collections.OrderedDict()
-        d["reviewer_name"] = rev[2]
-        d["review"] = rev[3]
-        d["summary"] = rev[8]
-        d["score"] = rev[7]
-        d["time"] = rev[9]
+        rev_dict = {}
+        rev_dict["reviewer_name"] = rev[2]
+        rev_dict["review"] = rev[3]
+        rev_dict["summary"] = rev[8]
+        rev_dict["score"] = rev[7]
+        rev_dict["time"] = rev[9]
         review_dict_list.append(d)
 
     return jsonify(review_dict_list)
@@ -89,14 +88,26 @@ def display_product_profile(asin):
 
        Should have a pretty histogram with scores, a product rating
        built from bayesian logic, the product's reviews, a search bar for
-       reviews (that returns w/ ajax), and a form to favorite the product.
+       reviews (that returns w/ ajax), and a heart to favorite the product.
     """
 
     product = Product.query.filter_by(asin=asin).one()
-    reviews = Review.query.filter_by(asin=asin).order_by(desc(Review.score)).all()
+    reviews = Review.query.filter_by(asin=asin).order_by(desc(Review.time)).all()
+
+    favorites = set()
+
+    if "user" in session:
+
+        # If user is logged-in, send a set of their favorited review-id's
+        user_id = session["user"]["id"]
+        favorite_reviews = FavoriteReview.query.filter_by(user_id=user_id).all()
+
+        for fav in favorite_reviews:
+            favorites.add(fav.review_id)
 
     return render_template("product_details.html",
                            product=product,
+                           favorites=favorites,
                            reviews=reviews)
 
 
@@ -127,8 +138,10 @@ def add_favorite_product():
 
 
 @app.route('/favorite-review', methods=['POST'])
-def add_favorite_review():
-    """Add a review for a product to a user's favorites"""
+def favorite_review():
+    """Add a review for a product to a user's favorites
+       returns a message of whether the review was favorited or unfavorited
+    """
 
     review_id = request.form.get('reviewID')
     user_id = session['user']['id']
