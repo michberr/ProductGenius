@@ -1,4 +1,5 @@
-from model import Product, User, connect_to_db, db
+from model import Product, User, FavoriteReview, FavoriteProduct
+from model import connect_to_db, db
 import json
 
 
@@ -121,7 +122,7 @@ def find_reviews(asin, query):
                 WHERE asin=:asin) review_search
                 WHERE review_search.review_info @@ to_tsquery('english', :search_terms)
                 ORDER BY relevancy DESC;
-              """
+          """
 
     cursor = db.session.execute(sql,
                                    {'search_terms': search_formatted,
@@ -130,6 +131,46 @@ def find_reviews(asin, query):
     reviews = cursor.fetchall()
 
     return reviews
+
+
+def update_favorite_product(user_id, asin):
+    """Update a product's favorited-status in a user's account"""
+
+    favorite = FavoriteProduct.query.filter(FavoriteProduct.user_id==user_id,
+                                            FavoriteProduct.asin==asin)
+
+    if favorite.count() == 0:
+        # If the user has not favorited the product, add it to the db
+        favorite_product = FavoriteProduct(user_id=user_id,
+                                           asin=asin)
+        db.session.add(favorite_product)
+
+    else:
+        # If the user has favorited the item, remove the favorite from the db
+        db.session.delete(favorite.one())
+
+    db.session.commit()
+
+
+def update_favorite_review(user_id, review_id):
+    """Update a product's favorited-status in a user's account"""
+
+    favorite = FavoriteReview.query.filter(FavoriteReview.user_id == user_id,
+                                           FavoriteReview.review_id == review_id)
+
+    if favorite.count() == 0:
+        # If the user has not favorited the product, add it to the db
+        favorite_review = FavoriteReview(user_id=user_id,
+                                         review_id=review_id)
+        db.session.add(favorite_review)
+        db.session.commit()
+        return "Favorited"
+
+    else:
+        # If the user has favorited the item, remove the favorite from the db
+        db.session.delete(favorite.one())
+        db.session.commit()
+        return "Unfavorited"
 
 
 def register_user(name, email, password):
@@ -151,5 +192,3 @@ def register_user(name, email, password):
         db.session.commit()
 
         return "Welcome to Product Genius"
-
- 

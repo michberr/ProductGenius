@@ -7,7 +7,7 @@ from indexes import INDEXES
 from model import Product, Review, User, Category, connect_to_db, db
 from sqlalchemy import desc
 from product_genius import find_products, get_scores, get_chart_data, find_reviews
-from product_genius import register_user
+from product_genius import register_user, update_favorite_review
 import collections
 import sqlalchemy
 
@@ -40,6 +40,7 @@ def search_products():
 
     if len(products) > 0:
         return render_template("product_listing.html",
+                               query=search_query,
                                products=products)
     else:
         return render_template("no_products.html")
@@ -112,18 +113,30 @@ def display_user_profile():
     pass
 
 
-@app.route('/favorite-product', methods=['POST'])
+@app.route('/favorite-product.json', methods=['POST'])
 def add_favorite_product():
-    """Adds a product to a user's favorites"""
+    """Add a product to a user's favorites"""
 
-    pass
+    # asin = request.form.get('asin')
+    # user_id = session['user']['id']
+
+    # # Adds or removes a product from a user's favorites
+    # message = update_favorite_product(user_id, asin)
+
+    # return message
 
 
 @app.route('/favorite-review', methods=['POST'])
 def add_favorite_review():
-    """Adds a review for a product to a user's favorites"""
+    """Add a review for a product to a user's favorites"""
 
-    pass
+    review_id = request.form.get('reviewID')
+    user_id = session['user']['id']
+
+    # Adds or removes a product from a user's favorites
+    message = update_favorite_review(user_id, review_id)
+
+    return message
 
 
 
