@@ -27,11 +27,15 @@ function displayReviews(results) {
 
     });
 
+    // Update the reviews html
     $("#reviews").html(review_html);
 
-    // Highlight the word in the review
+    // Extract the value of the query and format it
+    // so that it can be highlighted in the review
     var query = $("#query").val();
-    $('li').highlight(query);
+    query = query.trim();
+    var words = query.split(' ');
+    $("#reviews").highlight(words);
 
     // Must add event handler to new heart elements in DOM
     addHeartClicks();
