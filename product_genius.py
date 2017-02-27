@@ -133,6 +133,21 @@ def find_reviews(asin, query):
     return reviews
 
 
+def get_favorite_reviews(user_id):
+    """Retrives a user's favorited reviews from db.
+       Returns an empty set if user has no favorites.
+    """
+
+    favorites = set()
+
+    favorite_reviews = FavoriteReview.query.filter_by(user_id=user_id).all()
+
+    for fav in favorite_reviews:
+        favorites.add(fav.review_id)
+
+    return favorites
+
+
 def update_favorite_product(user_id, asin):
     """Update a product's favorited-status in a user's account"""
 
@@ -191,4 +206,4 @@ def register_user(name, email, password):
         # Commit transaction to db
         db.session.commit()
 
-        return "Welcome to Product Genius"
+        return "Welcome to ProductGenius"

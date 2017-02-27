@@ -3,11 +3,11 @@
 from flask import Flask, render_template, redirect, request, flash, session, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from jinja2 import StrictUndefined
-from indexes import INDEXES
+from product_indexes import INDEXES
 from model import Product, Review, User, Category, FavoriteReview, connect_to_db, db
 from sqlalchemy import desc
 from product_genius import find_products, get_scores, get_chart_data, find_reviews
-from product_genius import register_user, update_favorite_review
+from product_genius import register_user, update_favorite_review, get_favorite_reviews
 import sqlalchemy
 
 app = Flask(__name__)
@@ -67,17 +67,27 @@ def search_reviews(asin):
     # Returns a list of review tuples.
     reviews = find_reviews(asin, search_query)
 
-    # Need to reformat into a list of review ordered dictionaries
+    favorites = set()
+
+    if "user" in session:
+        user_id = session["user"]["id"]
+        favorites = get_favorite_reviews(user_id)
+        print favorites
+
+    # Need to reformat reviews into a list of dictionaries
     review_dict_list = []
 
     for rev in reviews:
         rev_dict = {}
+        rev_dict["review_id"] = rev[0]
         rev_dict["reviewer_name"] = rev[2]
         rev_dict["review"] = rev[3]
         rev_dict["summary"] = rev[8]
         rev_dict["score"] = rev[7]
         rev_dict["time"] = rev[9]
-        review_dict_list.append(d)
+        rev_dict["user"] = session.get("user")       # Is user logged in?
+        rev_dict["favorite"] = rev[0] in favorites   # Boolean of whether review is favorited
+        review_dict_list.append(rev_dict)
 
     return jsonify(review_dict_list)
 
@@ -94,16 +104,10 @@ def display_product_profile(asin):
     product = Product.query.filter_by(asin=asin).one()
     reviews = Review.query.filter_by(asin=asin).order_by(desc(Review.time)).all()
 
-    favorites = set()
+    favorites = None
 
     if "user" in session:
-
-        # If user is logged-in, send a set of their favorited review-id's
-        user_id = session["user"]["id"]
-        favorite_reviews = FavoriteReview.query.filter_by(user_id=user_id).all()
-
-        for fav in favorite_reviews:
-            favorites.add(fav.review_id)
+        favorites = get_favorite_reviews(session["user"]["id"])
 
     return render_template("product_details.html",
                            product=product,
@@ -147,9 +151,9 @@ def favorite_review():
     user_id = session['user']['id']
 
     # Adds or removes a product from a user's favorites
-    message = update_favorite_review(user_id, review_id)
+    favorite_status = update_favorite_review(user_id, review_id)
 
-    return message
+    return favorite_status
 
 
 
