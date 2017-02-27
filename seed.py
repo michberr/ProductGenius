@@ -25,7 +25,7 @@ def load_products(filename):
         # Each line is a dictionary containing info on a product
         p = eval(line)
 
-        # categories are stored in double brackets for some weird reason
+        # categories are stored in double brackets for weird semi-json reasons
         categories = p['categories'][0]
 
         for c in categories:
@@ -111,6 +111,26 @@ def load_reviews(filename):
         db.session.add(review)
 
     db.session.commit()
+
+
+def create_search_indexes():
+    """Create a prostgres search index on products and reviews """
+
+    pr_index = """CREATE INDEX idx_fts_product ON products
+                  USING gin((setweight(to_tsvector('english', title), 'A') ||
+                  setweight(to_tsvector('english', description), 'B')));
+               """
+
+    rev_index = """CREATE INDEX idx_fts_review ON reviews
+                   USING gin((setweight(to_tsvector('english', summary), 'A') ||
+                   setweight(to_tsvector('english', review), 'B')));
+                """
+
+    db.session.execute(pr_index)
+    db.session.execute(rev_index)
+
+    db.session.commit()
+
 
 def count_scores():
     """Calculate score distribution and update product object in db """
@@ -198,5 +218,6 @@ if __name__ == "__main__":
     load_products('data/electronics_metadata_subset.json')
     load_reviews('data/electronics_reviews_subset.json')
     count_scores()
+    create_search_indexes()
     create_users()
     create_favorite_products()
