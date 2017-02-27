@@ -147,6 +147,28 @@ def get_favorite_reviews(user_id):
 
     return favorites
 
+def format_reviews_to_dicts(reviews, user, favorites):
+    """Format a list of review tuples into a list of dictionaries.
+
+       This list will be sent to the front-end via json
+    """
+
+    rev_dict_list = []
+
+    for rev in reviews:
+        rev_dict = {}
+        rev_dict["review_id"] = rev[0]
+        rev_dict["reviewer_name"] = rev[2]
+        rev_dict["review"] = rev[3]
+        rev_dict["summary"] = rev[8]
+        rev_dict["score"] = rev[7]
+        rev_dict["time"] = rev[9]
+        rev_dict["user"] = user       # Is user logged in?
+        rev_dict["favorite"] = rev[0] in favorites   # Boolean of whether review is favorited
+        rev_dict_list.append(rev_dict)
+
+    return rev_dict_list
+
 
 def update_favorite_product(user_id, asin):
     """Update a product's favorited-status in a user's account"""

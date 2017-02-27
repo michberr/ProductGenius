@@ -12,8 +12,6 @@ function displayReviews(results) {
         // If there's a user logged in, display heart
         if (obj.user) {
 
-        console.log(obj.favorite);
-
           // If it's a favorited review, display red heart
           if (obj.favorite) {
             review_html += "<img src='/static/heart.png' class='heart' height='35' width='35' data-review-id=" + obj.review_id +">";

@@ -8,6 +8,7 @@ from model import Product, Review, User, Category, FavoriteReview, connect_to_db
 from sqlalchemy import desc
 from product_genius import find_products, get_scores, get_chart_data, find_reviews
 from product_genius import register_user, update_favorite_review, get_favorite_reviews
+from product_genius import format_reviews_to_dicts
 import sqlalchemy
 
 app = Flask(__name__)
@@ -68,26 +69,14 @@ def search_reviews(asin):
     reviews = find_reviews(asin, search_query)
 
     favorites = set()
+    user_id = None
 
     if "user" in session:
         user_id = session["user"]["id"]
         favorites = get_favorite_reviews(user_id)
-        print favorites
 
-    # Need to reformat reviews into a list of dictionaries
-    review_dict_list = []
-
-    for rev in reviews:
-        rev_dict = {}
-        rev_dict["review_id"] = rev[0]
-        rev_dict["reviewer_name"] = rev[2]
-        rev_dict["review"] = rev[3]
-        rev_dict["summary"] = rev[8]
-        rev_dict["score"] = rev[7]
-        rev_dict["time"] = rev[9]
-        rev_dict["user"] = session.get("user")       # Is user logged in?
-        rev_dict["favorite"] = rev[0] in favorites   # Boolean of whether review is favorited
-        review_dict_list.append(rev_dict)
+    # Converts list of review tuples into a list of dictionaries
+    review_dict_list = format_reviews_to_dicts(reviews, user_id, favorites)
 
     return jsonify(review_dict_list)
 
