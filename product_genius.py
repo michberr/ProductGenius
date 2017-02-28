@@ -165,7 +165,10 @@ def format_reviews_to_dicts(reviews, user_id):
     # favorite. To be more efficient, I extracted all of the user's
     # favorite reviews as a set of their id's, so that lookup time is
     # constant when constructing the list of dictionaries.
-    favorite_review_ids = get_favorite_review_ids(user_id)
+    favorite_review_ids = set()
+
+    if user_id:
+        favorite_review_ids = get_favorite_review_ids(user_id)
 
     rev_dict_list = []
 

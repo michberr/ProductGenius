@@ -15,8 +15,14 @@ function favoriteProduct(evt) {
             // "Unfavorited" or "Favorited"
             if (status === "Favorited") {
                 $("#product-fav-button").text("Favorited");
+
             } else {
-                $("#product-fav-button").text("Add to favorites");
+                var response = confirm("Warning! Unfavoriting this product will delete any saved reviews");
+                
+                if (response === true) {
+                    $("#product-fav-button").text("Add to favorites");
+                    $(".heart").attr("src", "/static/heart-empty.jpg");
+                }
             }
         });
 }
@@ -47,6 +53,10 @@ function favoriteReview(evt) {
             if (status === "Favorited") {
                 $("img[data-review-id=" + reviewID + "]").attr("src",
                     "/static/heart.png");
+
+                // Also change the product's status to favorited
+                $("#product-fav-button").text("Favorited");
+
             } else {
                 $("img[data-review-id=" + reviewID + "]").attr("src",
                     "/static/heart-empty.jpg");
