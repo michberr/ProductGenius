@@ -7,6 +7,15 @@
 
     <h1>{{ product.title }}</h1><br><br>
 
+    {% if "user" in session %}
+      {% if is_favorite_product %}
+        <button class="btn btn-default" id="product-fav-button">Favorited</button>
+      {% else %}
+        <button class="btn btn-default" id="product-fav-button">Add to favorites</button>
+      {% endif %}
+    {% endif %}
+    <br><br>
+
     <div class="container-fluid">
       <div class="row">
         <div class="col-xs-6">
@@ -42,7 +51,7 @@
         <h3>{{ rev.summary }}</h3>
 
         {% if "user" in session %}
-          {% if rev.review_id in favorites %}
+          {% if rev.review_id in favorite_reviews %}
             <img src="/static/heart.png" class="heart" height="35" width="35" data-review-id={{ rev.review_id }}>
           {% else %}
             <img src="/static/heart-empty.jpg" class="heart" height="35" width="35" data-review-id={{ rev.review_id }}>

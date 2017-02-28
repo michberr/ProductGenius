@@ -4,11 +4,11 @@ from flask import Flask, render_template, redirect, request, flash, session, jso
 from flask_debugtoolbar import DebugToolbarExtension
 from jinja2 import StrictUndefined
 from product_indexes import INDEXES
-from model import Product, Review, User, Category, FavoriteReview, connect_to_db, db
+from model import Product, Review, User, Category, FavoriteReview, FavoriteProduct, connect_to_db, db
 from sqlalchemy import desc
 from product_genius import find_products, get_scores, get_chart_data, find_reviews
 from product_genius import register_user, update_favorite_review, get_favorite_reviews
-from product_genius import format_reviews_to_dicts
+from product_genius import format_reviews_to_dicts, update_favorite_product
 import sqlalchemy
 
 app = Flask(__name__)
@@ -93,15 +93,26 @@ def display_product_profile(asin):
     product = Product.query.filter_by(asin=asin).one()
     reviews = Review.query.filter_by(asin=asin).order_by(desc(Review.time)).all()
 
-    favorites = None
+    favorite_reviews = None
+    is_favorite_product = None
 
     if "user" in session:
-        favorites = get_favorite_reviews(session["user"]["id"])
+        user_id = session["user"]["id"]
+
+        # Return a set of their favorite reviews, and a boolean for whether 
+        # they favorited the product on this page
+        favorite_reviews = get_favorite_reviews(user_id)
+        fav_product = FavoriteProduct.query.filter_by(user_id=user_id, asin=asin)
+        is_favorite_product = fav_product.count() == 1
+
+        print favorite_reviews
+        print is_favorite_product
 
     return render_template("product_details.html",
                            product=product,
-                           favorites=favorites,
-                           reviews=reviews)
+                           reviews=reviews,
+                           favorite_reviews=favorite_reviews,
+                           is_favorite_product=is_favorite_product)
 
 
 ##################### Favorites ################################
@@ -117,23 +128,27 @@ def display_user_profile():
     pass
 
 
-@app.route('/favorite-product.json', methods=['POST'])
-def add_favorite_product():
-    """Add a product to a user's favorites"""
+@app.route('/favorite-product', methods=['POST'])
+def favorite_product():
+    """Adds or removes a product from a user's favorites.
 
-    # asin = request.form.get('asin')
-    # user_id = session['user']['id']
+       Returns a message of whether the product was favorited or unfavorited.
+    """
 
-    # # Adds or removes a product from a user's favorites
-    # message = update_favorite_product(user_id, asin)
+    asin = request.form.get('asin')
+    user_id = session['user']['id']
 
-    # return message
+    # Adds or removes a product from a user's favorites
+    favorite_status = update_favorite_product(user_id, asin)
+
+    return favorite_status
 
 
 @app.route('/favorite-review', methods=['POST'])
 def favorite_review():
-    """Add a review for a product to a user's favorites
-       returns a message of whether the review was favorited or unfavorited
+    """Add or remove a product review from a user's favorites
+
+       Returns a message of whether the review was favorited or unfavorited
     """
 
     review_id = request.form.get('reviewID')

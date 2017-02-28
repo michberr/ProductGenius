@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+  
+{% block content %}
+
+<h1>User: {{ user.name }}</h1> 
+<h3>{{ user.email  }}</h3>
+
+<h2>Favorite Products: </h2>
+
+  {% for pr in favorite_products %}
+
+    <h4>{{ pr.title }}</h4>
+
+    <div id="product-img">
+      <a href="/product/{{ pr.asin }}">
+        <img src="{{ pr.img }}">
+      </a>
+    </div>
+
+    {% for rev in pr.favorite_reviews %}
+
+    {% endfor %}
+
+  {% endfor %}
+
+{% endblock %}

@@ -147,6 +147,7 @@ def get_favorite_reviews(user_id):
 
     return favorites
 
+
 def format_reviews_to_dicts(reviews, user, favorites):
     """Format a list of review tuples into a list of dictionaries.
 
@@ -181,12 +182,14 @@ def update_favorite_product(user_id, asin):
         favorite_product = FavoriteProduct(user_id=user_id,
                                            asin=asin)
         db.session.add(favorite_product)
+        db.session.commit()
+        return "Favorited"
 
     else:
         # If the user has favorited the item, remove the favorite from the db
         db.session.delete(favorite.one())
-
-    db.session.commit()
+        db.session.commit()
+        return "Unfavorited"
 
 
 def update_favorite_review(user_id, review_id):

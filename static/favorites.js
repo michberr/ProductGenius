@@ -1,5 +1,32 @@
 "use strict";
 
+// Updates whether the user favorited or unfavorited a product in the db
+function favoriteProduct(evt) {
+
+    var formInputs = {
+        "asin": asin
+    };
+
+    $.post("/favorite-product",
+        formInputs,
+        function(status) {
+
+            // status is a message from the server that takes the values of
+            // "Unfavorited" or "Favorited"
+            if (status === "Favorited") {
+                $("#product-fav-button").text("Favorited");
+            } else {
+                $("#product-fav-button").text("Add to favorites");
+            }
+        });
+}
+
+// Event handler for clicking on a prodct favorite button
+var addProductFavoriteClicks = function() {
+    $("#product-fav-button").on("click", favoriteProduct);
+};
+
+
 // Updates whether the user favorited or unfavorited a review in the db
 function favoriteReview(evt) {
 
@@ -35,3 +62,4 @@ var addHeartClicks = function() {
 
 // Calls addHeartClicks when document loads
 $(document).ready(addHeartClicks());
+$(document).ready((addProductFavoriteClicks));
