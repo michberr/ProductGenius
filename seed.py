@@ -2,7 +2,7 @@
 ## and fake user data
 
 from model import connect_to_db, db
-from model import Product, Review, User, FavoriteProduct, Category
+from model import Product, Review, User, Category
 from server import app
 from faker import Faker
 from random import randint, sample
@@ -116,6 +116,9 @@ def load_reviews(filename):
 def create_search_indexes():
     """Create a prostgres search index on products and reviews """
 
+    print "====================="
+    print "Creating search indexes"
+
     pr_index = """CREATE INDEX idx_fts_product ON products
                   USING gin((setweight(to_tsvector('english', title), 'A') ||
                   setweight(to_tsvector('english', description), 'B')));
@@ -189,9 +192,8 @@ def create_favorite_products():
 
         for product in user_products:
 
-            favorite_product = FavoriteProduct(asin=product.asin,
-                                               user_id=user.user_id)
-            db.session.add(favorite_product)
+            user.favorite_products.append(product)
+
 
     db.session.commit()
 
@@ -207,17 +209,11 @@ if __name__ == "__main__":
     # In case tables haven't been created, create them
     db.create_all()
 
-    # # Delete rows from table, so we don't replicate rows if this script is rerun
-    # FavoriteProduct.query.delete()
-    # User.query.delete()
-    # Product.query.delete()
-    # Review.query.delete()
-
     H = HTMLParser()
 
-    load_products('data/electronics_metadata_subset.json')
-    load_reviews('data/electronics_reviews_subset.json')
-    count_scores()
-    create_search_indexes()
-    create_users()
+    #load_products('data/electronics_metadata_subset.json')
+    #load_reviews('data/electronics_reviews_subset.json')
+    #count_scores()
+    #create_search_indexes()
+    #create_users()
     create_favorite_products()

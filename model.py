@@ -13,9 +13,13 @@ class User(db.Model):
     email = db.Column(db.Text, nullable=False, unique=True)
     password = db.Column(db.Text, nullable=False)
 
-    # Define relationship to favorites
-    favorite_products = db.relationship("FavoriteProduct")
-    favorite_reviews = db.relationship("FavoriteReview")
+    # Define relationship to favorite products
+    favorite_products = db.relationship('Product', secondary='favorite_products',
+        backref=db.backref('users', lazy='dynamic'))
+
+    # Define relationship to favorite reviews
+    favorite_reviews = db.relationship('Review', secondary='favorite_reviews',
+        backref=db.backref('users', lazy='dynamic'))
 
     def __repr__(self):
         """Display when printing a User object"""
@@ -23,7 +27,7 @@ class User(db.Model):
         return "<User: {} email: {}>".format(self.user_id, self.email)
 
 
-# Many to many linker between products and categories
+# Crosslink between products and categories
 product_categories = db.Table('product_categories',
     db.Column('asin', db.Text, db.ForeignKey('products.asin')),
     db.Column('cat_name', db.Text, db.ForeignKey('categories.cat_name'))
@@ -44,10 +48,10 @@ class Product(db.Model):
     scores = db.Column(db.JSON)    # dictionary with 1-5 star ratings
     n_scores = db.Column(db.Integer)
 
-    categories = db.relationship("Category",
+    categories = db.relationship('Category',
                                  secondary=product_categories,
-                                 backref=db.backref("products",
-                                                    lazy="dynamic"))
+                                 backref=db.backref('products',
+                                                    lazy='dynamic'))
 
     def __repr__(self):
         """Display when printing a Product object"""
@@ -83,8 +87,8 @@ class Review(db.Model):
     time = db.Column(db.DateTime)
 
     # Define relationship to product
-    product = db.relationship("Product",
-                              backref=db.backref("reviews",
+    product = db.relationship('Product',
+                              backref=db.backref('reviews',
                                                  order_by=review_id))
 
     def __repr__(self):
@@ -108,43 +112,17 @@ class Category(db.Model):
         return "<Category: {}>".format(self.cat_name)
 
 
-class FavoriteProduct(db.Model):
-    """User favorite product object"""
+# Crosslink between users and favorited products
+favorite_products = db.Table('favorite_products',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.user_id')),
+    db.Column('asin', db.Text, db.ForeignKey('products.asin'))
+)
 
-    __tablename__ = "favorite_products"
-
-    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    asin = db.Column(db.Text, db.ForeignKey('products.asin'), nullable=False)
-
-    # Define relationship to product
-    product = db.relationship("Product")
-
-    def __repr__(self):
-        """Display when printing a FavoriteProduct object"""
-
-        return "<FavoriteProduct: {} user: {} product: {}>".format(self.id,
-                                                                   self.user_id,
-                                                                   self.asin)
-
-
-class FavoriteReview(db.Model):
-    """User favorite review object"""
-
-    __tablename__ = "favorite_reviews"
-
-    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    review_id = db.Column(db.Integer, db.ForeignKey('reviews.review_id'), nullable=False)
-
-    # Define relationship to review
-    review = db.relationship("Review")
-
-    def __repr__(self):
-        """Display when printing a FavoriteReview object"""
-
-        return "<FavoriteReview: {} >".format(self.review_id)
-
+# Crosslink between users and favorited reviews
+favorite_reviews = db.Table('favorite_reviews',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.user_id')),
+    db.Column('review_id', db.Integer, db.ForeignKey('reviews.review_id'))
+)
 
 
 ##############################################################################
