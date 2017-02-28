@@ -4,11 +4,11 @@ from flask import Flask, render_template, redirect, request, flash, session, jso
 from flask_debugtoolbar import DebugToolbarExtension
 from jinja2 import StrictUndefined
 from product_indexes import INDEXES
-from model import User, connect_to_db, db
+from model import User, Product, connect_to_db, db
 from product_genius import find_products, find_reviews, get_scores, get_chart_data
-from product_genius import register_user, update_favorite_review, get_favorite_reviews
-from product_genius import format_reviews_to_dicts, update_favorite_product
-from product_genius import get_product_by_asin, get_reviews_by_asin, is_favorite_product
+from product_genius import register_user, update_favorite_review, update_favorite_product
+from product_genius import format_reviews_to_dicts, add_favorite_product_from_review, get_favorite_review_ids
+from product_genius import get_reviews_by_asin, is_favorite_product, remove_favorite_reviews
 import sqlalchemy
 
 app = Flask(__name__)
@@ -68,15 +68,13 @@ def search_reviews(asin):
     # Returns a list of review tuples.
     reviews = find_reviews(asin, search_query)
 
-    favorites = set()
     user_id = None
 
     if "user" in session:
         user_id = session["user"]["id"]
-        favorites = get_favorite_reviews(user_id)
 
     # Converts list of review tuples into a list of dictionaries
-    review_dict_list = format_reviews_to_dicts(reviews, user_id, favorites)
+    review_dict_list = format_reviews_to_dicts(reviews, user_id)
 
     return jsonify(review_dict_list)
 
@@ -90,7 +88,7 @@ def display_product_profile(asin):
        reviews (that returns w/ ajax), and a heart to favorite the product.
     """
 
-    product = get_product_by_asin(asin)
+    product = Product.query.get(asin)
     reviews = get_reviews_by_asin(asin)
 
     favorite_reviews = None
@@ -99,9 +97,9 @@ def display_product_profile(asin):
     if "user" in session:
         user_id = session["user"]["id"]
 
-        # Return a set of their favorite reviews, and a boolean for whether 
+        # Return a set of their favorite reviews, and a boolean for whether
         # they favorited the product on this page
-        favorite_reviews = get_favorite_reviews(user_id)
+        favorite_reviews = get_favorite_review_ids(user_id)
         is_favorite = is_favorite_product(user_id, asin)
 
     return render_template("product_details.html",
@@ -137,6 +135,10 @@ def favorite_product():
     # Adds or removes a product from a user's favorites
     favorite_status = update_favorite_product(user_id, asin)
 
+    # If the user unfavorites a product, remove all favorited reviews
+    if favorite_status == "Unfavorited":
+        remove_favorite_reviews(user_id, asin)
+
     return favorite_status
 
 
@@ -148,10 +150,15 @@ def favorite_review():
     """
 
     review_id = request.form.get('reviewID')
+    asin = request.form.get('asin')
     user_id = session['user']['id']
 
     # Adds or removes a product from a user's favorites
     favorite_status = update_favorite_review(user_id, review_id)
+
+    # If the user favorites a review, automatically favorite the product
+    if favorite_status == "Favorited":
+        add_favorite_product_from_review(user_id, asin)
 
     return favorite_status
 

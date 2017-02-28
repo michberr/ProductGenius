@@ -1,7 +1,214 @@
-from model import Product, User, Review, FavoriteReview, FavoriteProduct
+from model import Product, User, Review, favorite_reviews
 from model import connect_to_db, db
 from sqlalchemy import desc
 import json
+
+
+################ Retrieving data from db #############
+
+
+def get_scores(asin):
+    """Returns the distribution of scores for a product as a list.
+
+       ex:
+        if product "P1234" had one 2-star review and four 5-star reviews,
+        get_scores() would return [0, 1, 0, 0, 5]
+
+     """
+
+    scores = Product.query.filter_by(asin=asin).one().scores
+    scores = json.loads(scores)
+    score_list = (scores["1"], scores["2"], scores["3"], scores["4"], scores["5"])
+
+    return score_list
+
+
+def get_reviews_by_asin(asin):
+    """Retrieve a product's reviews by its asin"""
+
+    reviews = Review.query.filter_by(asin=asin).\
+                           order_by(desc(Review.time)).\
+                           all()
+
+    return reviews
+
+
+def get_favorite_review_ids(user_id):
+    """Return a set of a user's favorite review id's """
+
+    favorite_reviews = User.query.get(user_id).favorite_reviews
+    return set(rev.review_id for rev in favorite_reviews)
+
+
+################ Functions for favoriting ###############
+
+
+def is_favorite_product(user_id, asin):
+    """Return a boolean for whether a product is a user's favorite"""
+
+    favorite = User.query.filter_by(user_id=user_id).\
+                          filter(User.favorite_products.any(asin=asin))
+
+    return favorite.count() != 0
+
+
+def is_favorite_review(user_id, review_id):
+    """Return a boolean for whether a review is a user's favorite"""
+
+    favorite = User.query.filter_by(user_id=user_id).\
+                          filter(User.favorite_reviews.any(review_id=review_id))
+
+    return favorite.count() != 0
+
+
+def update_favorite_product(user_id, asin):
+    """Update a product's favorited-status in a user's account"""
+
+    user = User.query.get(user_id)
+    product = Product.query.get(asin)
+
+    if is_favorite_product(user_id, asin):
+        # If the user has favorited the item, remove the favorite from the db
+        user.favorite_products.remove(product)
+        db.session.commit()
+        return "Unfavorited"
+
+    else:
+        # If the user has not favorited the product, add it to the db
+        user.favorite_products.append(product)
+        db.session.commit()
+        return "Favorited"
+
+
+def update_favorite_review(user_id, review_id):
+    """Update a review's favorited-status in a user's account"""
+
+    user = User.query.get(user_id)
+    rev = Review.query.get(review_id)
+
+    if is_favorite_review(user_id, review_id):
+        # If the user has favorited the item, remove the favorite from the db
+        user.favorite_reviews.remove(rev)
+        db.session.commit()
+        return "Unfavorited"
+
+    else:
+        # If the user has not favorited the review, add it to the db
+        user.favorite_reviews.append(rev)
+        db.session.commit()
+        return "Favorited"
+
+
+def add_favorite_product_from_review(user_id, asin):
+    """Verify that a product is favorited.
+
+       This function is called when a user favorites a review. If they
+       haven't already favorited a product, it should automatically favorite
+       the product.
+    """
+
+    if not is_favorite_product(user_id, asin):
+        user = User.query.get(user_id)
+        product = Product.query.get(asin)
+        user.favorite_products.append(product)
+        db.session.commit()
+
+
+def remove_favorite_reviews(user_id, asin):
+    """Removes all favorited reviews for a product.
+
+       This function is called when a user unfavorites a product.
+    """
+
+    # Query for user's favorite reviews for that product
+    product_fav_reviews = Review.query.\
+                            join(favorite_reviews).\
+                            join(User).\
+                            filter(User.user_id==user_id,
+                                   Review.asin==asin).all()
+
+    user = User.query.get(user_id)
+    for review in product_fav_reviews:
+        user.favorite_reviews.remove(review)
+
+    db.session.commit()
+
+
+
+#################### Functions to format for javascript #################
+
+
+def get_chart_data(score_list):
+    """Construct data dictionary to create histogram with chart.js."""
+
+    data_dict = {
+        "labels": ["1", "2", "3", "4", "5"],
+        "datasets": [{
+            "label": "Customer Ratings",
+            "data": score_list,
+            "backgroundColor": 'rgba(54, 162, 235, 0.6)',
+            "hoverBackgroundColor": 'rgba(54, 162, 235, 1)',
+            "borderWidth": 5
+        }]
+    }
+
+    return data_dict
+
+def format_reviews_to_dicts(reviews, user_id):
+    """Format a list of review tuples into a list of dictionaries.
+
+       This list will be sent to the front-end via json
+    """
+
+    # When constructing the list of review dictionaries, we could
+    # query the database everytime to see if the review is the user's
+    # favorite. To be more efficient, I extracted all of the user's
+    # favorite reviews as a set of their id's, so that lookup time is
+    # constant when constructing the list of dictionaries.
+    favorite_review_ids = get_favorite_review_ids(user_id)
+
+    rev_dict_list = []
+
+    for rev in reviews:
+        rev_dict = {}
+        rev_dict["review_id"] = rev[0]
+        rev_dict["reviewer_name"] = rev[2]
+        rev_dict["review"] = rev[3]
+        rev_dict["summary"] = rev[8]
+        rev_dict["score"] = rev[7]
+        rev_dict["time"] = rev[9]
+        rev_dict["user"] = user_id       # Is user logged in?
+        rev_dict["favorite"] = rev[0] in favorite_review_ids   # Boolean of whether review is favorited
+        rev_dict_list.append(rev_dict)
+
+    return rev_dict_list
+
+
+#################### Login functions #################
+
+
+def register_user(name, email, password):
+    """Register a new user and return a message to flash"""
+
+    # If user exists, flash an error message
+    if User.query.filter_by(email=email).count() != 0:
+        return "That email already exists. Please login or register for a new account"
+
+    else:
+        user = User(name=name,
+                    email=email,
+                    password=password)
+
+        # Add user to the session
+        db.session.add(user)
+
+        # Commit transaction to db
+        db.session.commit()
+
+        return "Welcome to ProductGenius"
+
+
+#################### Searching functions #################
 
 
 def find_products(query, index):
@@ -21,38 +228,33 @@ def find_products(query, index):
     words = query.strip().split(' ')
     search_formatted = ' & '.join(words)
 
-    if index == "All":
-
-        sql = """SELECT *, ts_rank(product_search.product_info,
+    base_sql = """SELECT *, ts_rank(product_search.product_info,
                 to_tsquery('english', :search_terms)) AS relevancy
                 FROM (SELECT *,
                     setweight(to_tsvector('english', title), 'A') ||
                     setweight(to_tsvector('english', description), 'B') AS product_info
                 FROM products) product_search
                 WHERE product_search.product_info @@ to_tsquery('english', :search_terms)
-                ORDER BY relevancy DESC;
-              """
+               """
+
+    if index == "All":
+
+        sql = base_sql + " ORDER BY relevancy DESC;"
+
     else:
 
         # If the search index is not "All", filter results by products within
         # the provided category
-        sql = """SELECT *, ts_rank(product_search.product_info,
-                to_tsquery('english', :search_terms)) AS relevancy
-                FROM (SELECT *,
-                    setweight(to_tsvector('english', title), 'A') ||
-                    setweight(to_tsvector('english', description), 'B') AS product_info
-                FROM products) product_search
-                WHERE product_search.product_info @@ to_tsquery('english', :search_terms) AND
-                asin IN
-                    (SELECT asin
-                        FROM categories
-                        INNER JOIN product_categories as pc
-                        USING (cat_name)
-                        INNER JOIN products
-                        USING (asin)
-                        WHERE pc.cat_name = :category)
-                ORDER BY relevancy DESC;
-              """
+        sql = base_sql + """ AND asin IN
+                                (SELECT asin
+                                    FROM categories
+                                    INNER JOIN product_categories as pc
+                                    USING (cat_name)
+                                    INNER JOIN products
+                                    USING (asin)
+                                    WHERE pc.cat_name = :category)
+                            ORDER BY relevancy DESC;
+                          """
 
     cursor = db.session.execute(sql,
                                 {'search_terms': search_formatted,
@@ -62,39 +264,6 @@ def find_products(query, index):
 
     # Returns a list of product tuples
     return products
-
-
-def get_scores(asin):
-    """Returns the distribution of scores for a product as a list.
-
-       ex:
-        if product "P1234" had one 2-star review and four 5-star reviews,
-        get_scores() would return [0, 1, 0, 0, 5]
-
-     """
-
-    scores = Product.query.filter_by(asin=asin).one().scores
-    scores = json.loads(scores)
-    score_list = (scores["1"], scores["2"], scores["3"], scores["4"], scores["5"])
-
-    return score_list
-
-
-def get_chart_data(score_list):
-    """Construct data dictionary to create histogram with chart.js."""
-
-    data_dict = {
-        "labels": ["1", "2", "3", "4", "5"],
-        "datasets": [{
-            "label": "Customer Ratings",
-            "data": score_list,
-            "backgroundColor": 'rgba(54, 162, 235, 0.6)',
-            "hoverBackgroundColor": 'rgba(54, 162, 235, 1)',
-            "borderWidth": 5
-        }]
-    }
-
-    return data_dict
 
 
 def find_reviews(asin, query):
@@ -133,126 +302,3 @@ def find_reviews(asin, query):
 
     return reviews
 
-def get_product_by_asin(asin):
-    """Retrieve a product object by its asin"""
-
-    product = Product.query.filter_by(asin=asin).one()
-
-    return product
-
-
-def get_reviews_by_asin(asin):
-    """Retrieve a product's reviews by its asin"""
-
-    reviews = Review.query.filter_by(asin=asin).order_by(desc(Review.time)).all()
-
-    return reviews
-
-
-def is_favorite_product(user_id, asin):
-    """Return a boolean for whether a product is a user's favorite"""
-
-    fav_product = FavoriteProduct.query.filter_by(user_id=user_id, asin=asin)
-
-    return fav_product.count() != 0
-
-
-def get_favorite_reviews(user_id):
-    """Retrieve a user's favorited reviews from db.
-       Returns an empty set if user has no favorites.
-    """
-
-    favorites = set()
-
-    favorite_reviews = FavoriteReview.query.filter_by(user_id=user_id).all()
-
-    for fav in favorite_reviews:
-        favorites.add(fav.review_id)
-
-    return favorites
-
-
-def format_reviews_to_dicts(reviews, user, favorites):
-    """Format a list of review tuples into a list of dictionaries.
-
-       This list will be sent to the front-end via json
-    """
-
-    rev_dict_list = []
-
-    for rev in reviews:
-        rev_dict = {}
-        rev_dict["review_id"] = rev[0]
-        rev_dict["reviewer_name"] = rev[2]
-        rev_dict["review"] = rev[3]
-        rev_dict["summary"] = rev[8]
-        rev_dict["score"] = rev[7]
-        rev_dict["time"] = rev[9]
-        rev_dict["user"] = user       # Is user logged in?
-        rev_dict["favorite"] = rev[0] in favorites   # Boolean of whether review is favorited
-        rev_dict_list.append(rev_dict)
-
-    return rev_dict_list
-
-
-def update_favorite_product(user_id, asin):
-    """Update a product's favorited-status in a user's account"""
-
-    favorite = FavoriteProduct.query.filter(FavoriteProduct.user_id==user_id,
-                                            FavoriteProduct.asin==asin)
-
-    if favorite.count() == 0:
-        # If the user has not favorited the product, add it to the db
-        favorite_product = FavoriteProduct(user_id=user_id,
-                                           asin=asin)
-        db.session.add(favorite_product)
-        db.session.commit()
-        return "Favorited"
-
-    else:
-        # If the user has favorited the item, remove the favorite from the db
-        db.session.delete(favorite.one())
-        db.session.commit()
-        return "Unfavorited"
-
-
-def update_favorite_review(user_id, review_id):
-    """Update a product's favorited-status in a user's account"""
-
-    favorite = FavoriteReview.query.filter(FavoriteReview.user_id == user_id,
-                                           FavoriteReview.review_id == review_id)
-
-    if favorite.count() == 0:
-        # If the user has not favorited the product, add it to the db
-        favorite_review = FavoriteReview(user_id=user_id,
-                                         review_id=review_id)
-        db.session.add(favorite_review)
-        db.session.commit()
-        return "Favorited"
-
-    else:
-        # If the user has favorited the item, remove the favorite from the db
-        db.session.delete(favorite.one())
-        db.session.commit()
-        return "Unfavorited"
-
-
-def register_user(name, email, password):
-    """Register a new user and return a message to flash"""
-
-    # If user exists, flash an error message
-    if User.query.filter_by(email=email).count() != 0:
-        return "That email already exists. Please login or register for a new account"
-
-    else:
-        user = User(name=name,
-                    email=email,
-                    password=password)
-
-        # Add user to the session
-        db.session.add(user)
-
-        # Commit transaction to db
-        db.session.commit()
-
-        return "Welcome to ProductGenius"
