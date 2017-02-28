@@ -4,11 +4,11 @@ from flask import Flask, render_template, redirect, request, flash, session, jso
 from flask_debugtoolbar import DebugToolbarExtension
 from jinja2 import StrictUndefined
 from product_indexes import INDEXES
-from model import Product, Review, User, Category, FavoriteReview, FavoriteProduct, connect_to_db, db
-from sqlalchemy import desc
-from product_genius import find_products, get_scores, get_chart_data, find_reviews
+from model import User, connect_to_db, db
+from product_genius import find_products, find_reviews, get_scores, get_chart_data
 from product_genius import register_user, update_favorite_review, get_favorite_reviews
 from product_genius import format_reviews_to_dicts, update_favorite_product
+from product_genius import get_product_by_asin, get_reviews_by_asin, is_favorite_product
 import sqlalchemy
 
 app = Flask(__name__)
@@ -90,11 +90,11 @@ def display_product_profile(asin):
        reviews (that returns w/ ajax), and a heart to favorite the product.
     """
 
-    product = Product.query.filter_by(asin=asin).one()
-    reviews = Review.query.filter_by(asin=asin).order_by(desc(Review.time)).all()
+    product = get_product_by_asin(asin)
+    reviews = get_reviews_by_asin(asin)
 
     favorite_reviews = None
-    is_favorite_product = None
+    is_favorite = None
 
     if "user" in session:
         user_id = session["user"]["id"]
@@ -102,17 +102,13 @@ def display_product_profile(asin):
         # Return a set of their favorite reviews, and a boolean for whether 
         # they favorited the product on this page
         favorite_reviews = get_favorite_reviews(user_id)
-        fav_product = FavoriteProduct.query.filter_by(user_id=user_id, asin=asin)
-        is_favorite_product = fav_product.count() == 1
-
-        print favorite_reviews
-        print is_favorite_product
+        is_favorite = is_favorite_product(user_id, asin)
 
     return render_template("product_details.html",
                            product=product,
                            reviews=reviews,
-                           favorite_reviews=favorite_reviews,
-                           is_favorite_product=is_favorite_product)
+                           is_favorite=is_favorite,
+                           favorite_reviews=favorite_reviews)
 
 
 ##################### Favorites ################################

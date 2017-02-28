@@ -1,5 +1,6 @@
-from model import Product, User, FavoriteReview, FavoriteProduct
+from model import Product, User, Review, FavoriteReview, FavoriteProduct
 from model import connect_to_db, db
+from sqlalchemy import desc
 import json
 
 
@@ -132,9 +133,32 @@ def find_reviews(asin, query):
 
     return reviews
 
+def get_product_by_asin(asin):
+    """Retrieve a product object by its asin"""
+
+    product = Product.query.filter_by(asin=asin).one()
+
+    return product
+
+
+def get_reviews_by_asin(asin):
+    """Retrieve a product's reviews by its asin"""
+
+    reviews = Review.query.filter_by(asin=asin).order_by(desc(Review.time)).all()
+
+    return reviews
+
+
+def is_favorite_product(user_id, asin):
+    """Return a boolean for whether a product is a user's favorite"""
+
+    fav_product = FavoriteProduct.query.filter_by(user_id=user_id, asin=asin)
+
+    return fav_product.count() != 0
+
 
 def get_favorite_reviews(user_id):
-    """Retrives a user's favorited reviews from db.
+    """Retrieve a user's favorited reviews from db.
        Returns an empty set if user has no favorites.
     """
 
