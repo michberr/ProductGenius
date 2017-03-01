@@ -40,6 +40,18 @@ def get_favorite_review_ids(user_id):
     return set(rev.review_id for rev in favorite_reviews)
 
 
+def get_favorite_reviews_by_product(user_id, asin):
+    """Return a list of review objects that a user favorited for a given product"""
+
+    favorites = Review.query.\
+                join(favorite_reviews).\
+                join(User).\
+                filter(User.user_id==user_id,
+                       Review.asin==asin).all()
+
+    return favorites
+
+
 ################ Functions for favoriting ###############
 
 
@@ -121,11 +133,7 @@ def remove_favorite_reviews(user_id, asin):
     """
 
     # Query for user's favorite reviews for that product
-    product_fav_reviews = Review.query.\
-                            join(favorite_reviews).\
-                            join(User).\
-                            filter(User.user_id==user_id,
-                                   Review.asin==asin).all()
+    product_fav_reviews = get_favorite_reviews_by_product(user_id, asin)
 
     user = User.query.get(user_id)
     for review in product_fav_reviews:
@@ -304,4 +312,3 @@ def find_reviews(asin, query):
     reviews = cursor.fetchall()
 
     return reviews
-

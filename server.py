@@ -8,7 +8,7 @@ from model import User, Product, connect_to_db, db
 from product_genius import find_products, find_reviews, get_scores, get_chart_data
 from product_genius import register_user, update_favorite_review, update_favorite_product
 from product_genius import format_reviews_to_dicts, add_favorite_product_from_review, get_favorite_review_ids
-from product_genius import get_reviews_by_asin, is_favorite_product, remove_favorite_reviews
+from product_genius import get_reviews_by_asin, is_favorite_product, remove_favorite_reviews, get_favorite_reviews_by_product
 import sqlalchemy
 
 app = Flask(__name__)
@@ -111,15 +111,27 @@ def display_product_profile(asin):
 
 ##################### Favorites ################################
 
-@app.route('/user/int<user_id>')
-def display_user_profile():
+@app.route('/user/<user_id>')
+def display_user_profile(user_id):
     """Display user's favorite products and reviews.
 
        User should be able to compare products/reviews side by side.
        Might add functionality to add to the amazon cart via their API
     """
 
-    pass
+    user_id = int(user_id)
+    user = User.query.get(user_id)
+
+    favorite_products = user.favorite_products
+
+    print favorite_products
+
+    for pr in favorite_products:
+        pr.favorited_reviews = get_favorite_reviews_by_product(user_id, pr.asin)
+
+    return render_template("user_page.html",
+                           user=user,
+                           favorite_products=favorite_products)
 
 
 @app.route('/favorite-product', methods=['POST'])
