@@ -1,8 +1,26 @@
 "use strict";
 
-// Updates whether the user favorited or unfavorited a product in the db
-function favoriteProduct(evt) {
+// ====================== Favoriting Products ===================
 
+// Updates whether the user favorited or unfavorited a product in the db
+function handleFavoriteProductClick(evt) {
+
+    // If the user tries to unfavorite a product, send alert message before
+    // removing all favorited reviews
+    if ($("#product-fav-button").text() === "Favorited") {
+        
+        var response = confirm("Warning! Unfavoriting this product will delete any saved reviews");  
+        
+        if (response === true) {
+            updateProductFavorite();
+        }
+    } else {
+        updateProductFavorite();
+    }
+
+}
+
+function updateProductFavorite() {
     var formInputs = {
         "asin": asin
     };
@@ -14,23 +32,26 @@ function favoriteProduct(evt) {
             // status is a message from the server that takes the values of
             // "Unfavorited" or "Favorited"
             if (status === "Favorited") {
+
                 $("#product-fav-button").text("Favorited");
 
             } else {
-                var response = confirm("Warning! Unfavoriting this product will delete any saved reviews");
-                
-                if (response === true) {
-                    $("#product-fav-button").text("Add to favorites");
-                    $(".heart").attr("src", "/static/heart-empty.jpg");
-                }
+
+                $("#product-fav-button").text("Add to favorites");
+                $(".heart").attr("src", "/static/heart-empty.jpg");
+
             }
         });
 }
 
+
 // Event handler for clicking on a prodct favorite button
 var addProductFavoriteClicks = function() {
-    $("#product-fav-button").on("click", favoriteProduct);
+    $("#product-fav-button").on("click", handleFavoriteProductClick);
 };
+
+
+// ====================== Favoriting Reviews ===================
 
 
 // Updates whether the user favorited or unfavorited a review in the db
