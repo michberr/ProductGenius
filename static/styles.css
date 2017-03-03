@@ -5,7 +5,7 @@
 #product-img {
     float: left;
     width: 500px;
-    padding: 40px;
+    padding-top: 20px;
 }
 
 #product-listing {
@@ -20,6 +20,10 @@
     padding: 20px; 
     width: 1200px;
     height: 500px;
+}
+
+.product-page {
+    background-color: white; 
 }
 
 body { 
@@ -54,5 +58,5 @@ a:hover {
 }
 
 .product-histogram {
-    padding-top: 80px;
+    padding-top: 10px;
 }

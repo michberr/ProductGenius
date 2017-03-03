@@ -91,6 +91,15 @@ def display_product_profile(asin):
     product = Product.query.get(asin)
     reviews = get_reviews_by_asin(asin)
 
+    positive_keywords = []
+    negative_keywords = []
+
+    for keyword in product.keywords:
+        if keyword.label == "positive":
+            positive_keywords.append(keyword.word)
+        else:
+            negative_keywords.append(keyword.word)
+
     favorite_reviews = None
     is_favorite = None
 
@@ -105,6 +114,8 @@ def display_product_profile(asin):
     return render_template("product_details.html",
                            product=product,
                            reviews=reviews,
+                           positive_keywords=positive_keywords,
+                           negative_keywords=negative_keywords,
                            is_favorite=is_favorite,
                            favorite_reviews=favorite_reviews)
 

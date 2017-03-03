@@ -3,7 +3,7 @@
 {% block content %}
 
 <div class="row">
-  <div class="col-lg-12 col-lg-offset-0">
+  <div class="col-lg-12 col-lg-offset-0 product-page">
 
     <h1>{{ product.title }}</h1><br><br>
 
@@ -15,18 +15,39 @@
       {% endif %}
     {% endif %}
     <br><br>
-
+    
+    <!-- # Product image and ratings histogram -->
     <div class="container-fluid">
       <div class="row">
         <div class="col-xs-6">
           <img src={{ product.image }}>
         </div>
         <div class="col-xs-6">
+          <h2>Product Ratings</h2>
           <div class="product-histogram">
             <canvas id="barChart"></canvas>
           <div>
         </div>
       </div>
+    </div>
+
+    <!-- # Review keywords from naive bayes -->
+    <div class="container-fluid">
+    <div class="row">
+      <div class="col-lg-12">
+        <br>
+        <h3>People who rated this product positively used these words in their reviews:</h3>
+        {% for pk in positive_keywords %}
+          {{ pk }},
+        {% endfor %} 
+
+        <h3>People who rated this product negatively used these words in their reviews:</h3>
+
+        {% for nk in negative_keywords %}
+          {{ nk }}, 
+        {% endfor %}
+      </div>
+    </div>
     </div>
 
     <!-- # Review search bar -->
