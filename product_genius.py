@@ -260,7 +260,7 @@ def find_products(query, index):
                                 (SELECT asin
                                     FROM categories
                                     INNER JOIN product_categories as pc
-                                    USING (cat_name)
+                                    USING (cat_id)
                                     INNER JOIN products
                                     USING (asin)
                                     WHERE pc.cat_name = :category)

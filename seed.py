@@ -2,13 +2,14 @@
 ## and fake user data
 
 from model import connect_to_db, db
-from model import Product, Review, User, Category
+from model import Product, Review, User, Category, Keyword
 from server import app
 from faker import Faker
 from random import randint, sample
 from datetime import datetime
 import json
 from HTMLParser import HTMLParser
+from keyword_extraction import get_keywords_from_naive_bayes
 
 
 ##################### Seed Products ###########################
@@ -141,15 +142,42 @@ def count_scores():
     print "======================"
     print "calculating review distributions"
 
-    for pr in Product.query.all():
+    for product in Product.query.all():
 
         # Loop through all products. Calculate the distribution of reviews
         # and add to the database as a json. Also add the number of reviews
-        score_distribution = pr.calculate_score_distribution()
-        pr.scores = json.dumps(score_distribution)
-        pr.n_scores = sum(score_distribution.values())
+        score_distribution = product.calculate_score_distribution()
+        product.scores = json.dumps(score_distribution)
+        product.n_scores = sum(score_distribution.values())
 
         db.session.commit()
+
+
+def extract_product_keywords_from_reviews():
+    """Extract the top ten positive and negative keywords from reviews"""
+
+    print "======================"
+    print "extracting keywords"
+
+    for product in Product.query.all():
+
+        # Loop through all products. Run naive bayes to extract the 10
+        # keywords with the highest likelihood of being in positive
+        # and negative reviews
+
+        # keywords is a dictionary with (keyword, label) as (k,v)
+        keywords = get_keywords_from_naive_bayes(product)
+
+        for k, v in keywords.items():
+
+            # Create a Keyword object and add to db
+            keyword = Keyword(word=k, label=v)
+            db.session.add(keyword)
+            db.session.commit()
+
+            # Add the Keyword to the product
+            product.keywords.append(keyword)
+            db.session.commit()
 
 
 ##################### Seed User data ###############################
@@ -211,9 +239,10 @@ if __name__ == "__main__":
 
     H = HTMLParser()
 
-    #load_products('data/electronics_metadata_subset.json')
-    #load_reviews('data/electronics_reviews_subset.json')
-    #count_scores()
-    #create_search_indexes()
-    #create_users()
-    create_favorite_products()
+    # load_products('data/electronics_metadata_subset.json')
+    # load_reviews('data/electronics_reviews_subset.json')
+    # count_scores()
+    extract_product_keywords_from_reviews()
+    # create_search_indexes()
+    # create_users()
+    # create_favorite_products()
