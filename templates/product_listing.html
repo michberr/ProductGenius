@@ -9,22 +9,22 @@
 <h1>Products:</h1>
 <br><br>
 
-  {% for pr in products[:10] %}
+  {% for asin, title, _, price, image, _, n_scores,_,_,_,_ in products %}
     <div class="product">
 
       <div class="product-title">
-        <h3><a href="/product/{{ pr[0] }}">{{ pr[1] }}</a></h3>
+        <h3><a href="/product/{{ asin }}">{{ title }}</a></h3>
       </div>
 
       <div id="product-img">
-        <a href="/product/{{ pr[0] }}">
-          <img src="{{ pr[5] }}">
+        <a href="/product/{{ asin }}">
+          <img src="{{ image }}">
         </a>
       </div>
 
       <div id="product-listing">
-        <div class="product-price">Price: ${{ pr[3] }}</div>
-        <div class="nreviews">{{ pr[7] }} reviews</div>
+        <div class="product-price">Price: ${{ price }}</div>
+        <div class="nreviews">{{ n_scores }} reviews</div>
         <div class="productgenius-score">ProductGenius Score: </div>
       </div>
     

@@ -2,7 +2,7 @@
 ## and fake user data
 
 from model import connect_to_db, db
-from model import Product, Review, User, Category, Keyword
+from model import Product, Review, User, Category
 from server import app
 from faker import Faker
 from random import randint, sample
@@ -30,7 +30,7 @@ def load_products(filename):
         categories = p['categories'][0]
 
         for c in categories:
-            # Loop through each product category, add to the
+            # Loop through each of the product's categories, add to the
             # categories table if it's not there
 
             n_results = Category.query.filter_by(cat_name=c).count()
@@ -40,7 +40,7 @@ def load_products(filename):
                 db.session.add(category)
                 db.session.commit()
 
-        # Pull out the categories again as a list of Category objects
+        # Pull out the product's categories again as a list of Category objects
         category_objects = Category.query.filter(Category.cat_name.in_(categories)).all()
 
         title = p.get('title')
@@ -56,7 +56,6 @@ def load_products(filename):
                           title=title,
                           description=description,
                           price=p.get('price'),
-                          author=p.get('author'),
                           image=p.get('imUrl'),
                           categories=category_objects)
 
@@ -79,34 +78,16 @@ def load_reviews(filename):
         # Each line is a review for one product in the products table
         r = eval(line)
 
-        # Format the helpful votes.
-        # They are stored in the file as a list of length 2 e.g. [1, 3]
-        # if one out of three people found this review helpful.
-        #
-        # I will store them in the database as total votes (integer)
-        # and the helpful fraction (float)
-        total_votes = r['helpful'][1]
-        helpful_votes = r['helpful'][0]
-
-        if total_votes != 0:
-            helpful_fraction = helpful_votes/float(total_votes)
-        else:
-            helpful_fraction = 0
-
         review_time = datetime.strptime(r['reviewTime'], '%m %d, %Y')
 
         summary = H.unescape(r['summary'])
         review = H.unescape(r['reviewText'])
 
         # Create a new review object and add it to the reviews table
-        review = Review(reviewer_id=r['reviewerID'],
-                        reviewer_name=r.get('reviewer_name'),
-                        review=r['reviewText'],
+        review = Review(review=r['reviewText'],
                         asin=r['asin'],
-                        helpful_total=total_votes,
-                        helpful_fraction=helpful_fraction,
                         score=r['overall'],
-                        summary=r['summary'],
+                        summary=summary,
                         time=review_time)
 
         db.session.add(review)
@@ -148,7 +129,7 @@ def count_scores():
         # and add to the database as a json. Also add the number of reviews
         score_distribution = product.calculate_score_distribution()
         product.scores = json.dumps(score_distribution)
-        product.n_scores = sum(score_distribution.values())
+        product.n_scores = sum(score_distribution)
 
         db.session.commit()
 
@@ -165,24 +146,20 @@ def extract_product_keywords_from_reviews():
         # keywords with the highest likelihood of being in positive
         # and negative reviews
 
-        # keywords is a dictionary with (keyword, label) as (k,v)
+        # keywords is a tuple with a list of positive keywords and negative keywords
         keywords = get_keywords_from_naive_bayes(product)
 
-        for k, v in keywords.items():
+        # need to do tuple unpacking
+        product.pos_words = keywords[0]
+        product.neg_words = keywords[1]
 
-            # Create a Keyword object and add to db
-            keyword = Keyword(word=k, label=v)
-            db.session.add(keyword)
-            db.session.commit()
-
-            # Add the Keyword to the product
-            product.keywords.append(keyword)
-            db.session.commit()
+        db.session.commit()
 
 
 ##################### Seed User data ###############################
 
 N_USERS = 10
+
 
 def create_users():
     """Creates fake users and loads them into the db"""
@@ -222,9 +199,7 @@ def create_favorite_products():
 
             user.favorite_products.append(product)
 
-
     db.session.commit()
-
 
 
 
@@ -239,10 +214,10 @@ if __name__ == "__main__":
 
     H = HTMLParser()
 
-    # load_products('data/electronics_metadata_subset.json')
-    # load_reviews('data/electronics_reviews_subset.json')
-    # count_scores()
+    #load_products('data/electronics_metadata_subset.json')
+    #load_reviews('data/electronics_reviews_subset.json')
+    #count_scores()
     extract_product_keywords_from_reviews()
-    # create_search_indexes()
-    # create_users()
-    # create_favorite_products()
+    create_search_indexes()
+    create_users()
+    create_favorite_products()

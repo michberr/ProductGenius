@@ -4,12 +4,9 @@ from flask import Flask, render_template, redirect, request, flash, session, jso
 from flask_debugtoolbar import DebugToolbarExtension
 from jinja2 import StrictUndefined
 from product_indexes import INDEXES
-from model import User, Product, connect_to_db, db
-from product_genius import find_products, find_reviews, get_scores, get_chart_data
-from product_genius import register_user, update_favorite_review, update_favorite_product
-from product_genius import format_reviews_to_dicts, add_favorite_product_from_review, get_favorite_review_ids
-from product_genius import get_reviews_by_asin, is_favorite_product, remove_favorite_reviews, get_favorite_reviews_by_product
-import sqlalchemy
+from model import User, Product, Review, connect_to_db, db
+from product_genius import get_chart_data, format_reviews_to_dicts
+# import sqlalchemy
 
 app = Flask(__name__)
 
@@ -36,7 +33,9 @@ def search_products():
     search_index = request.args.get('index')
 
     # Retrieve products from db that match search_query within search_index
-    products = find_products(search_query, search_index)
+    products = Product.find_products(search_query, search_index)
+
+    print len(products[0])
 
     if len(products) > 0:
         return render_template("product_listing.html",
@@ -50,7 +49,10 @@ def search_products():
 def product_reviews_data(asin):
     """Return data about product reviews for histogram."""
 
-    score_list = get_scores(asin)
+    product = Product.query.get(asin)
+    score_list = product.get_scores()
+
+    # Formatting for a chart.js object
     data_dict = get_chart_data(score_list)
 
     return jsonify(data_dict)
@@ -65,8 +67,8 @@ def search_reviews(asin):
     search_query = request.args.get('query')
 
     # Run full-text search within a product's reviews
-    # Returns a list of review tuples.
-    reviews = find_reviews(asin, search_query)
+    # Return a list of review tuples.
+    reviews = Review.find_reviews(asin, search_query)
 
     user_id = None
 
@@ -89,33 +91,21 @@ def display_product_profile(asin):
     """
 
     product = Product.query.get(asin)
-    reviews = get_reviews_by_asin(asin)
-
-    positive_keywords = []
-    negative_keywords = []
-
-    for keyword in product.keywords:
-        if keyword.label == "positive":
-            positive_keywords.append(keyword.word)
-        else:
-            negative_keywords.append(keyword.word)
 
     favorite_reviews = None
     is_favorite = None
 
     if "user" in session:
         user_id = session["user"]["id"]
+        user = User.query.get(user_id)
 
         # Return a set of their favorite reviews, and a boolean for whether
         # they favorited the product on this page
-        favorite_reviews = get_favorite_review_ids(user_id)
-        is_favorite = is_favorite_product(user_id, asin)
+        favorite_reviews = user.get_favorite_review_ids()
+        is_favorite = user.is_favorite_product(asin)
 
     return render_template("product_details.html",
                            product=product,
-                           reviews=reviews,
-                           positive_keywords=positive_keywords,
-                           negative_keywords=negative_keywords,
                            is_favorite=is_favorite,
                            favorite_reviews=favorite_reviews)
 
@@ -133,16 +123,14 @@ def display_user_profile(user_id):
     user_id = int(user_id)
     user = User.query.get(user_id)
 
-    favorite_products = user.favorite_products
+    for pr in user.favorite_products:
 
-    print favorite_products
-
-    for pr in favorite_products:
-        pr.favorited_reviews = get_favorite_reviews_by_product(user_id, pr.asin)
+        # Attach an attribute list to the product, with the user's favorited reviews
+        pr.favorited_reviews = pr.get_users_favorite_reviews(user_id)
 
     return render_template("user_page.html",
                            user=user,
-                           favorite_products=favorite_products)
+                           favorite_products=user.favorite_products)
 
 
 @app.route('/favorite-product', methods=['POST'])
@@ -155,12 +143,14 @@ def favorite_product():
     asin = request.form.get('asin')
     user_id = session['user']['id']
 
+    user = User.query.get(user_id)
+
     # Adds or removes a product from a user's favorites
-    favorite_status = update_favorite_product(user_id, asin)
+    favorite_status = user.update_favorite_product(asin)
 
     # If the user unfavorites a product, remove all favorited reviews
     if favorite_status == "Unfavorited":
-        remove_favorite_reviews(user_id, asin)
+        user.remove_favorite_reviews(asin)
 
     return favorite_status
 
@@ -176,12 +166,14 @@ def favorite_review():
     asin = request.form.get('asin')
     user_id = session['user']['id']
 
+    user = User.query.get(user_id)
+
     # Adds or removes a product from a user's favorites
-    favorite_status = update_favorite_review(user_id, review_id)
+    favorite_status = user.update_favorite_review(review_id)
 
     # If the user favorites a review, automatically favorite the product
     if favorite_status == "Favorited":
-        add_favorite_product_from_review(user_id, asin)
+        user.add_favorite_product_from_review(asin)
 
     return favorite_status
 
@@ -205,7 +197,11 @@ def process_registration():
     email = request.form.get('email')
     password = request.form.get('password')
 
-    message = register_user(name, email, password)
+    if User.query.filter_by(email=email).count() != 0:
+        message = "That email already exists. Please login or register for a new account"
+    else:
+        User.register_user(name, email, password)
+        message = "Welcome to ProductGenius"
 
     flash(message)
 
@@ -243,6 +239,7 @@ def log_in():
         session['user'] = {"id": user.user_id,
                            "name": user.name}
 
+        flash("Logged in as {}".format(user.name))
         return redirect("/")
 
     else:

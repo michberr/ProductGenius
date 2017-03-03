@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+import json
 
 db = SQLAlchemy()
 
@@ -13,22 +14,123 @@ class User(db.Model):
     email = db.Column(db.Text, nullable=False, unique=True)
     password = db.Column(db.Text, nullable=False)
 
-    # Define relationship to favorite products
     favorite_products = db.relationship('Product',
                                         secondary='favorite_products',
-                                        backref=db.backref('users',
-                                                            lazy='dynamic'))
+                                        lazy='dynamic')
 
-    # Define relationship to favorite reviews
     favorite_reviews = db.relationship('Review',
-                                        secondary='favorite_reviews',
-                                        backref=db.backref('users',
-                                                            lazy='dynamic'))
+                                       secondary='favorite_reviews',
+                                       lazy="dynamic")
+
+    def __init__(self, name, email, password):
+        self.name = name
+        self.email = email
+        self.password = password
 
     def __repr__(self):
         """Display when printing a User object"""
 
         return "<User: {} email: {}>".format(self.user_id, self.email)
+
+    def get_favorite_review_ids(self):
+        """Return a set of a user's favorite review id's """
+
+        return set(rev.review_id for rev in self.favorite_reviews)
+
+    def is_favorite_product(self, asin):
+        """Return a boolean for whether a product is a user's favorite"""
+
+        favorite = self.favorite_products.filter_by(asin=asin)
+
+        return favorite.count() != 0
+
+    def is_favorite_review(self, review_id):
+        """Return a boolean for whether a review is a user's favorite"""
+
+        favorite = self.favorite_reviews.filter_by(review_id=review_id)
+
+        return favorite.count() != 0
+
+    def update_favorite_product(self, asin):
+        """Update a product's favorited-status in a user's account"""
+
+        product = Product.query.get(asin)
+
+        if self.is_favorite_product(asin):
+
+            # If the user has favorited the item, remove the favorite from the db
+            self.favorite_products.remove(product)
+            db.session.commit()
+            return "Unfavorited"
+
+        else:
+
+            # If the user has not favorited the product, add it to the db
+            self.favorite_products.append(product)
+            db.session.commit()
+            return "Favorited"
+
+    def update_favorite_review(self, review_id):
+        """Update a review's favorited-status in a user's account"""
+
+        rev = Review.query.get(review_id)
+
+        if self.is_favorite_review(review_id):
+
+            # If the user has favorited the item, remove the favorite from the db
+            self.favorite_reviews.remove(rev)
+            db.session.commit()
+            return "Unfavorited"
+
+        else:
+
+            # If the user has not favorited the review, add it to the db
+            self.favorite_reviews.append(rev)
+            db.session.commit()
+            return "Favorited"
+
+    def add_favorite_product_from_review(self, asin):
+        """Verify that a product is favorited.
+
+           This function is called when a user favorites a review. If they
+           haven't already favorited a product, it should automatically favorite
+           the product.
+        """
+
+        if not self.is_favorite_product(asin):
+            product = Product.query.get(asin)
+            self.favorite_products.append(product)
+            db.session.commit()
+
+    def remove_favorite_reviews(self, asin):
+        """Removes all favorited reviews for a product.
+
+           This function is called when a user unfavorites a product.
+        """
+
+        product = Product.query.get(asin)
+
+        # Query for user's favorite reviews for that product
+        product_fav_reviews = product.get_users_favorite_reviews(self.user_id)
+
+        for review in product_fav_reviews:
+            self.favorite_reviews.remove(review)
+
+        db.session.commit()
+
+    @classmethod
+    def register_user(cls, name, email, password):
+        """Register a new user and return a message to flash"""
+
+        user = User(name=name,
+                    email=email,
+                    password=password)
+
+        # Add user to the session
+        db.session.add(user)
+
+        # Commit transaction to db
+        db.session.commit()
 
 
 class Product(db.Model):
@@ -40,21 +142,29 @@ class Product(db.Model):
     title = db.Column(db.Text)
     description = db.Column(db.Text)
     price = db.Column(db.Float)
-    author = db.Column(db.Text)
     image = db.Column(db.Text, nullable=False)   # link to image
-    scores = db.Column(db.JSON)    # dictionary with 1-5 star ratings
+    scores = db.Column(db.JSON)                  # dictionary with 1-5 star ratings
     n_scores = db.Column(db.Integer)
+    pos_words = db.Column(db.JSON)               # List of positive keywords stored as json
+    neg_words = db.Column(db.JSON)               # List of negative keywords stored as json
 
     categories = db.relationship('Category',
                                  secondary='product_categories',
-                                 backref=db.backref('products',
-                                                    lazy='dynamic'))
+                                 back_populates='products')
 
-    # Define relationship to keywords
-    keywords = db.relationship('Keyword',
-                               secondary='product_keywords',
-                               backref=db.backref('products',
-                                                  lazy='dynamic'))
+    reviews = db.relationship('Review',
+                              order_by='Review.time',
+                              back_populates='product')
+
+    def __init__(self, asin, title, description, price, image, categories):
+        self.asin = asin
+        self.title = title
+        self.description = description
+        self.price = price
+        self.image = image
+        self.categories = categories
+        self.pos_words = []
+        self.neg_words = []
 
     def __repr__(self):
         """Display when printing a Product object"""
@@ -64,12 +174,82 @@ class Product(db.Model):
     def calculate_score_distribution(self):
         """Calculates the distribution of 1,2,3,4,5 star reviews"""
 
-        distribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        distribution = [0, 0, 0, 0, 0]
 
         for review in self.reviews:
-            distribution[review.score] += 1
+            distribution[review.score - 1] += 1
 
         return distribution
+
+    def get_scores(self):
+        """Returns the distribution of scores for a product as a list.
+
+           ex:
+            if product "P1234" had one 2-star review and four 5-star reviews,
+            get_scores() would return [0, 1, 0, 0, 5]
+         """
+
+        return json.loads(self.scores)
+
+    def get_users_favorite_reviews(self, user_id):
+        """Return a list of review objects that a user favorited for a given product"""
+
+        user = User.query.get(user_id)
+
+        return [rev for rev in self.reviews if rev in user.favorite_reviews]
+
+    @staticmethod
+    def find_products(query, index):
+        """Queries database to find products within a search index based on user's search.
+
+           This full-text search in postgres stems, removes stop words, applies weights
+           to different fields (title is more important than description), and ranks
+           the results by relevancy.
+
+           Currently, the default weights in ts_rank() are used, which is 1 for 'A'
+           and 0.4 for 'B'. Future goal: experiment with different weightings and/or
+           a cutoff for how relevant a product has to be to return.
+        """
+
+        # If the search_query is more than one word,
+        # need to format the query for sql with a '&' in between words
+        words = query.strip().split(' ')
+        search_formatted = ' & '.join(words)
+
+        base_sql = """SELECT *, ts_rank(product_search.product_info,
+                    to_tsquery('english', :search_terms)) AS relevancy
+                    FROM (SELECT *,
+                        setweight(to_tsvector('english', title), 'A') ||
+                        setweight(to_tsvector('english', description), 'B') AS product_info
+                    FROM products) product_search
+                    WHERE product_search.product_info @@ to_tsquery('english', :search_terms)
+                   """
+
+        if index == "All":
+
+            sql = base_sql + " ORDER BY relevancy DESC;"
+
+        else:
+
+            # If the search index is not "All", filter results by products within
+            # the provided category
+            sql = base_sql + """ AND asin IN
+                                    (SELECT asin
+                                        FROM categories
+                                        INNER JOIN product_categories as pc
+                                        USING (cat_id)
+                                        INNER JOIN products
+                                        USING (asin)
+                                        WHERE pc.cat_name = :category)
+                                ORDER BY relevancy DESC;
+                              """
+
+        cursor = db.session.execute(sql,
+                                    {'search_terms': search_formatted,
+                                     'category': index})
+
+        # Returns a list of product tuples
+        return cursor.fetchall()
 
 
 class Review(db.Model):
@@ -78,20 +258,22 @@ class Review(db.Model):
     __tablename__ = "reviews"
 
     review_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    reviewer_id = db.Column(db.Text, nullable=False)
-    reviewer_name = db.Column(db.Text)
     review = db.Column(db.Text, nullable=False)
     asin = db.Column(db.Text, db.ForeignKey('products.asin'))
-    helpful_total = db.Column(db.Integer)
-    helpful_fraction = db.Column(db.Float)
     score = db.Column(db.Integer, nullable=False)
-    summary = db.Column(db.Text)
-    time = db.Column(db.DateTime)
+    summary = db.Column(db.Text, nullable=False)
+    time = db.Column(db.DateTime, nullable=False)
 
     # Define relationship to product
     product = db.relationship('Product',
-                              backref=db.backref('reviews',
-                                                 order_by=review_id))
+                              back_populates='reviews')
+
+    def __init__(self, review, summary, asin, score, time):
+        self.review = review
+        self.summary = summary
+        self.asin = asin
+        self.score = score
+        self.time = time
 
     def __repr__(self):
         """Display when printing a Review object"""
@@ -99,6 +281,40 @@ class Review(db.Model):
         return "<Review: {} asin: {} summary: {}>".format(self.review_id,
                                                           self.asin,
                                                           self.summary)
+
+    @staticmethod
+    def find_reviews(asin, query):
+        """Queries database to find product reviews based on user's search.
+
+           This full-text search in postgres stems, removes stop words, applies weights
+           to different fields (review summary is more important than the review text),
+           and ranks the results by relevancy.
+
+           Currently, the default weights in ts_rank() are used, which is 1 for 'A'
+           and 0.4 for 'B'. Future goal: experiment with different weightings and/or
+           a cutoff for how relevant a review has to be to return.
+        """
+
+        # If the search_query is more than one word,
+        # need to format the query for sql with a '&' in between words
+        words = query.strip().split(' ')
+        search_formatted = ' & '.join(words)
+
+        sql = """SELECT *, ts_rank(array[0, 0, 0.8, 1], review_search.review_info,
+                    to_tsquery('english', :search_terms)) AS relevancy
+                    FROM (SELECT *,
+                        setweight(to_tsvector('english', summary), 'A') ||
+                        setweight(to_tsvector('english', review), 'B') AS review_info
+                    FROM reviews
+                    WHERE asin=:asin) review_search
+                    WHERE review_search.review_info @@ to_tsquery('english', :search_terms)
+                    ORDER BY relevancy DESC;
+              """
+
+        cursor = db.session.execute(sql,
+                                    {'search_terms': search_formatted,
+                                     'asin': asin})
+        return cursor.fetchall()
 
 
 class Category(db.Model):
@@ -109,40 +325,23 @@ class Category(db.Model):
     cat_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     cat_name = db.Column(db.Text)
 
+    products = db.relationship('Product',
+                               secondary='product_categories',
+                               back_populates='categories')
+
+    def __init__(self, cat_name):
+        self.cat_name = cat_name
+
     def __repr__(self):
         """Display when printing a Category object"""
 
         return "<Category: {}>".format(self.cat_name)
 
 
-class Keyword(db.Model):
-    """Keywords found in product reviews.
-
-       These were extracted via Naive Bayes.
-    """
-
-    __tablename__ = "keywords"
-
-    keyword_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    word = db.Column(db.Text, nullable=False)
-    label = db.Column(db.Text, nullable=False)
-
-    def __repr__(self):
-        """Display when printing a Category object"""
-
-        return "<Keyword: {}>".format(self.word)
-
-
 # Crosslink between products and categories
 product_categories = db.Table('product_categories',
     db.Column('asin', db.Text, db.ForeignKey('products.asin'), primary_key=True),
     db.Column('cat_id', db.Integer, db.ForeignKey('categories.cat_id'), primary_key=True)
-)
-
-# Crosslink between products and keywords
-product_keywords = db.Table('product_keywords',
-    db.Column('asin', db.Text, db.ForeignKey('products.asin'), primary_key=True),
-    db.Column('keyword_id', db.Integer, db.ForeignKey('keywords.keyword_id'), primary_key=True)
 )
 
 # Crosslink between users and favorited products

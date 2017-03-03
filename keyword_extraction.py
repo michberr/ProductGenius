@@ -50,9 +50,6 @@ def get_keywords_from_naive_bayes(product):
     # Fit model
     nb = MultinomialNB()
     nb.fit(X, y)
-    if nb.classes_[0] != 'negative':
-        print 'alert alert! class label issue!'
-        print nb.classes_
 
     # probabilities for most negative words
     pos_probs = nb.feature_log_prob_[1] - nb.feature_log_prob_[0]
@@ -63,20 +60,15 @@ def get_keywords_from_naive_bayes(product):
     # array of words
     features = vectorizer.get_feature_names()
 
-    # list of word tuples sorted by log probabilities in descending order
-    pos_words = sorted(zip(pos_probs, features), reverse=True)[:10]
-    neg_words = sorted(zip(neg_probs, features), reverse=True)[:10]
+    # list of (probability, word) tuples sorted by log probabilities in descending order
+    pos_probs_and_words = sorted(zip(pos_probs, features), reverse=True)[:10]
+    neg_probs_and_words = sorted(zip(neg_probs, features), reverse=True)[:10]
 
-    keywords = {}
+    pos_words = [tup[1] for tup in pos_probs_and_words]
+    neg_words = [tup[1] for tup in neg_probs_and_words]
 
-    for prob, word in pos_words:
-        keywords[word] = "positive"
-
-    for prob, word in neg_words:
-        keywords[word] = "negative"
-
-    # returns a dictionary of positive and negative keywords
-    return keywords
+    # returns a tuple of positive and negative keywords
+    return (pos_words, neg_words)
 
 
 def cross_validation(nb, X, y):
@@ -118,4 +110,3 @@ def cross_validation(nb, X, y):
 # if __name__ == "__main__":
 
     # Run cross validation on 100 of the products and average the data
-
