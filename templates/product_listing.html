@@ -1,35 +1,28 @@
 {% extends 'base.html' %}
-  
 {% block content %}
 
-<div id="search-term">
-  <h2>You searched for "{{ query }}"</h2>
-</div>
-<br>
-<h1>Products:</h1>
-<br><br>
+<div class="product-listing-page"> 
+  <h2 id="search-term">You searched for "{{ query }}"</h2>
+  <br>
+  <h1>Products:</h1>
+  <br><br><hr>
+  {% if not products %}
+    <h2>Sorry, there were no products that matched your search.</h2>
+  {% endif %}
 
   {% for asin, title, _, price, image, _, n_scores,_,_,_,_ in products %}
-    <div class="product">
-
-      <div class="product-title">
-        <h3><a href="/product/{{ asin }}">{{ title }}</a></h3>
-      </div>
-
-      <div id="product-img">
-        <a href="/product/{{ asin }}">
-          <img src="{{ image }}">
-        </a>
-      </div>
-
-      <div id="product-listing">
-        <div class="product-price">Price: ${{ price }}</div>
-        <div class="nreviews">{{ n_scores }} reviews</div>
-        <div class="productgenius-score">ProductGenius Score: </div>
-      </div>
-    
+    <div class="product-box">
+      <h3><a href="/product/{{ asin }}">{{ title }}</a></h3><br>
+      <div class="product-image"><a href="/product/{{ asin }}"><img src="{{ image }}"></a></div>
+      <!-- <div class="product-details">
+        <p>Price: ${{ price }}</p>
+        <p>{{ n_scores }} reviews</p>
+        <p>ProductGenius Score: </p>
+      </div> -->
     </div>
-    <br>
+    <hr>
   {% endfor %}
+
+</div>
 
 {% endblock %}

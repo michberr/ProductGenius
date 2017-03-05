@@ -2,8 +2,7 @@
   
 {% block content %}
 
-<div class="row">
-  <div class="col-lg-12 col-lg-offset-0 product-page">
+  <div class="product-page">
 
     <h1>{{ product.title }}</h1><br><br>
 
@@ -32,70 +31,57 @@
     </div>
 
     <!-- # Review keywords from naive bayes -->
-    <div class="container-fluid">
-    <div class="row">
-      <div class="col-lg-12">
-        <br>
-        <h3>People who rated this product positively used these words in their reviews:</h3>
-        {% for pw in product.pos_words %}
-          {{ pw }},
-        {% endfor %} 
+    <br>
+    <h3>People who rated this product positively used these words in their reviews:</h3>
+    {% for pw in product.pos_words %}
+      {{ pw }},
+    {% endfor %} 
+    <br>
 
-        <h3>People who rated this product negatively used these words in their reviews:</h3>
-
-        {% for nw in product.neg_words %}
-          {{ nw }}, 
-        {% endfor %}
-      </div>
-    </div>
-    </div>
-
-    <!-- # Review search bar -->
-    <div class="row">
-      <div class="col-md-10 col-md-offset-0">
-        <br>
-        <h2>Search within reviews:</h2>
-        <form class="form-inline" action="/search-review" id="review-search-form" method="GET">
-          <div class="form-group">
-            <input class="form-control input-lg" name="query" id="query" type="text">
-          </div>
-          <button type="submit" class="btn btn-primary">Search</button>
-        </form>
-      </div>
-    </div>
+    <h3>People who rated this product negatively used these words in their reviews:</h3>
+    {% for nw in product.neg_words %}
+      {{ nw }}, 
+    {% endfor %}
+    <br>
 
     <!-- Review display -->
 
-    <h1>Reviews:</h1>
-    <div id="reviews">
+    <h2>Search within reviews:</h2>
+    <form class="form-inline" action="/search-review" id="review-search-form" method="GET">
+      <div class="form-group">
+        <input class="form-control input-lg" name="query" id="query" type="text">
+      </div>
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+    <br><hr>
+
       {% for rev in product.reviews %}
+        <br>
         <h3>{{ rev.summary }}</h3>
 
         {% if "user" in session %}
           {% if rev.review_id in favorite_reviews %}
-            <img src="/static/heart.png" class="heart" height="35" width="35" data-review-id={{ rev.review_id }}>
+            <img src="/static/img/heart.png" class="heart" height="35" width="35" data-review-id={{ rev.review_id }}>
           {% else %}
-            <img src="/static/heart-empty.jpg" class="heart" height="35" width="35" data-review-id={{ rev.review_id }}>
+            <img src="/static/img/heart-empty.jpg" class="heart" height="35" width="35" data-review-id={{ rev.review_id }}>
           {% endif %}
         {% endif %}
 
-        <ul>
-          <li>Score: {{ rev.score }}</li>
-          <li>{{ rev.review }}</li>
-        </ul>
+        <h4>Score: {{ rev.score }}</h4>
+        <p>{{ rev.review }}</p>
+        <br>
+        <hr>
       {% endfor %}
-    </div>
-    
-  </div>
+
 </div>
 
 <!-- Javascript links -->
 
 <!-- Pass the product's asin to javascript files -->
 <script> var asin = "{{ product.asin }}";</script>
-<script src="/static/histogram.js"></script>
-<script src="/static/search_reviews.js"></script>
-<script src="/static/favorites.js"></script>
+<script src="/static/js/histogram.js"></script>
+<script src="/static/js/search_reviews.js"></script>
+<script src="/static/js/favorites.js"></script>
 
 
 {% endblock %}

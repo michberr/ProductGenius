@@ -38,7 +38,7 @@ function updateProductFavorite() {
             } else {
 
                 $("#product-fav-button").text("Add to favorites");
-                $(".heart").attr("src", "/static/heart-empty.jpg");
+                $(".heart").attr("src", "/static/img/heart-empty.jpg");
 
             }
         });
@@ -73,14 +73,14 @@ function favoriteReview(evt) {
             // "Unfavorited" or "Favorited"
             if (status === "Favorited") {
                 $("img[data-review-id=" + reviewID + "]").attr("src",
-                    "/static/heart.png");
+                    "/static/img/heart.png");
 
                 // Also change the product's status to favorited
                 $("#product-fav-button").text("Favorited");
 
             } else {
                 $("img[data-review-id=" + reviewID + "]").attr("src",
-                    "/static/heart-empty.jpg");
+                    "/static/img/heart-empty.jpg");
             }
         });
 }

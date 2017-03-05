@@ -14,10 +14,10 @@ function displayReviews(results) {
 
           // If it's a favorited review, display red heart
           if (obj.favorite) {
-            review_html += "<img src='/static/heart.png' class='heart' height='35' width='35' data-review-id=" + obj.review_id +">";
+            review_html += "<img src='/static/img/heart.png' class='heart' height='35' width='35' data-review-id=" + obj.review_id +">";
           } else {
             // Otherwise, display empty heart
-            review_html += "<img src='/static/heart-empty.jpg' class='heart' height='35' width='35' data-review-id=" + obj.review_id +">";
+            review_html += "<img src='/static/img/heart-empty.jpg' class='heart' height='35' width='35' data-review-id=" + obj.review_id +">";
           }
         }
         review_html += "<ul>";

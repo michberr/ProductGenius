@@ -1,0 +1,92 @@
+.home {
+    background: url("/static/img/Shopping-online.jpg") no-repeat center center fixed;
+    background-size: cover;
+    min-height: 100%;
+    min-width: 100%;
+    padding-top: 200px;
+}
+
+html, body {
+    height: 100%;
+}
+
+body { 
+    padding: 0px; 
+    font-family: Helvetica;
+    color: black;
+    margin-top: 60px;
+}
+
+.navbar {
+    font-size: 20px;
+    padding: 5px;
+    font-family: Helvetica
+}
+
+.jumbotron {
+    align-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+
+/*Highlighting on review words after search */
+.highlight { 
+    background-color: #c7ffff; 
+}
+
+.product-img {
+    float: left;
+    margin: 50px;
+    width: 500px;
+}
+
+/*Product listing page*/
+.product-listing-page {
+    padding-top: 40px;
+    padding-left: 60px;
+    padding-right: 60px;
+    padding-bottom: 40px;
+}
+
+.product-box {
+    background-color: white;
+    padding-top: 10px;
+    padding-left: 40px;
+    font-size: 30px;
+    padding-bottom: 40px;
+}
+
+
+/*Product details page*/
+.product-page {
+    padding-top: 40px;
+    padding-left: 60px;
+    padding-right: 60px;
+    padding-bottom: 40px;
+}
+
+
+
+#search-term {
+    color: #939393;
+}
+
+/* unvisited link */
+.product-listing-page a:link {
+    color: black;
+}
+
+/* visited link */
+.product-listing-page a:visited {
+    color: grey;
+}
+
+/* mouse over link */
+.product-listing-page a:hover {
+    color: hotpink;
+}
+
+.product-histogram {
+    padding-top: 10px;
+}

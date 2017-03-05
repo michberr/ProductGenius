@@ -1,91 +1,62 @@
 <!doctype html>
 <html>
+<head>
+  <title>ProductGenius</title>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+  <script src = "https://code.jquery.com/jquery.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.2.1/Chart.js"></script>
+  <script src="/static/js/jquery.highlight-5.js"></script>
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
 
-  <head>
-    <!-- This is where the title goes -->
-    <title>ProductGenius</title>
+<body>
 
-    <!-- Link to bootstrap as stylesheet -->
-    <link rel="stylesheet"
-        href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.css"/>
-    
-    <!-- Link to css -->
-    <link rel="stylesheet" href="/static/styles.css">
+  <nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fluid">
+      <!-- Brand and toggle get grouped for better mobile display -->
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="/">ProductGenius</a>
+      </div>
 
-    <!-- Link to jquery and jquery plugins -->
-    <script src="https://code.jquery.com/jquery.js"></script>
-    <script src="/static/jquery.highlight-5.js"></script>
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <form class="navbar-form navbar-left" action="/search">
+          <div class="form-group">
+            <input type="text" class="form-control" name="query" placeholder="Search">
+            <input type="hidden" name="index" value="All">
+          </div>
+          <button type="submit" class="btn btn-default">Search</button>
+        </form>
+        <ul class="nav navbar-nav navbar-right">
+          {% if 'user' in session %}
+            <li><a href="/user/{{ session['user']['id'] }}">{{ session['user']['name'] }}</a></li>
+            <li><a href="/logout">Logout</a></li>
+          {% else %}
+            <li><a href="/login">Login</a></li>
+            <li><a href="/register">Register</a></li>
+          {% endif %}
+        </ul>
+      </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+  </nav>
 
-    <!-- Link to bootstrap js -->
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-
-    <!-- Link to Chart.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.2.1/Chart.js"></script>
-
-  </head>
-
-  <!-- This is where the body goes -->
-  <body>
-
-    <nav class="navbar navbar-inverse navbar-fixed-top">
-      <div class="container-fluid">
-        <!-- Brand and toggle get grouped for better mobile display -->
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="/">ProductGenius</a>
-        </div>
-
-        <!-- Collect the nav links, forms, and other content for toggling -->
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-          <form class="navbar-form navbar-left" action="/search">
-            <div class="form-group">
-              <input type="text" class="form-control" name="query" placeholder="Search">
-              <input type="hidden" name="index" value="All">
-            </div>
-            <button type="submit" class="btn btn-default">Search</button>
-          </form>
-          <ul class="nav navbar-nav navbar-right">
-            {% if 'user' in session %}
-              <li><p class="navbar-text">Logged in as {{ session['user']['name'] }}</p></li>
-              <li><a href="/logout">Logout</a></li>
-            {% else %}
-              <li><a href="/login">Login</a></li>
-              <li><a href="/register">Register</a></li>
-            {% endif %}
-          </ul>
-        </div><!-- /.navbar-collapse -->
-      </div><!-- /.container-fluid -->
-    </nav>
-
-    <!-- Show flashed messages -->
-    {% with messages = get_flashed_messages() %}
+  {% with messages = get_flashed_messages() %}
       {% for message in messages %}
         <div class="alert alert-warning text-center">{{ message }}</div>
       {% endfor %}
     {% endwith %}
 
-    <!-- This is where the main content goes. -->
-    <div class="container">
-      {% block content %}
-        BODY OF PAGE GOES HERE 
-      {% endblock %}
-    </div>
-  
-  </body>
+  {% block content %} 
 
-  <!-- This is where the footer goes. -->
-  <footer>
-    <br><br>
-    <div class="row">
-      <div class="col-xs-12 text-center">
-        <p>&copy; 2017 ReviewGenius, Inc.</p>
-      </div>
-    </div>
-  </footer>
+  {% endblock %}
 
+
+</body>
 </html>
