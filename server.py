@@ -71,7 +71,7 @@ def search_reviews(asin):
     # Converts list of review tuples into a list of dictionaries
     review_dict_list = format_reviews_to_dicts(reviews, user_id)
 
-    return jsonify(review_dict_list)
+    return jsonify(review_dict_list[:10])
 
 
 @app.route('/product/<asin>')

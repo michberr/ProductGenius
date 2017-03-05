@@ -40,11 +40,6 @@ def format_reviews_to_dicts(reviews, user_id):
 
     rev_dict_list = []
 
-    for item in reviews[0]:
-        print item
-
-    print "length is {}".format(len(reviews[0]))
-
     for review_id, review, asin, score, summary, time, _, _ in reviews:
         rev_dict = {}
         rev_dict["review_id"] = review_id
