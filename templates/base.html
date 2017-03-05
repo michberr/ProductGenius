@@ -48,10 +48,10 @@
   </nav>
 
   {% with messages = get_flashed_messages() %}
-      {% for message in messages %}
-        <div class="alert alert-warning text-center">{{ message }}</div>
-      {% endfor %}
-    {% endwith %}
+    {% for message in messages %}
+      <div class="alert alert-warning text-center">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
 
   {% block content %} 
 

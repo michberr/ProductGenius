@@ -1,11 +1,14 @@
 {% extends 'base.html' %}
-  
 {% block content %}
 
-  <div class="product-page">
+<div class="page">
+<div class="container-fluid">
 
-    <h1>{{ product.title }}</h1><br><br>
+  <div class="row">
+      <h2>{{ product.title }}</h2><br>
+  </div>
 
+  <div class="row">
     {% if "user" in session %}
       {% if is_favorite %}
         <button class="btn btn-default" id="product-fav-button">Favorited</button>
@@ -13,49 +16,57 @@
         <button class="btn btn-default" id="product-fav-button">Add to favorites</button>
       {% endif %}
     {% endif %}
-    <br><br>
-    
-    <!-- # Product image and ratings histogram -->
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-xs-6">
-          <img src={{ product.image }}>
-        </div>
-        <div class="col-xs-6">
-          <h2>Product Ratings</h2>
-          <div class="product-histogram">
-            <canvas id="barChart"></canvas>
-          <div>
-        </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-4">
+      <img src="{{ product.image }}" height="250" width="250"><br><br>
+      <div class="product-details">
+        <p>Price: ${{ product.price }}</p>
+        <p>{{ product.n_scores }} reviews</p>
+        <p>ProductGenius Score: </p>
       </div>
     </div>
-
-    <!-- # Review keywords from naive bayes -->
-    <br>
-    <h3>People who rated this product positively used these words in their reviews:</h3>
-    {% for pw in product.pos_words %}
-      {{ pw }},
-    {% endfor %} 
-    <br>
-
-    <h3>People who rated this product negatively used these words in their reviews:</h3>
-    {% for nw in product.neg_words %}
-      {{ nw }}, 
-    {% endfor %}
-    <br>
-
-    <!-- Review display -->
-
-    <h2>Search within reviews:</h2>
-    <form class="form-inline" action="/search-review" id="review-search-form" method="GET">
-      <div class="form-group">
-        <input class="form-control input-lg" name="query" id="query" type="text">
+    <div class="col-sm-4">
+      <h2>Buyer Ratings</h2><br>
+      <div class="product-histogram">
+          <canvas id="barChart"></canvas>
       </div>
-      <button type="submit" class="btn btn-primary">Search</button>
-    </form>
-    <br><hr>
+    </div>
+  </div>
+  <hr>
 
-      {% for rev in product.reviews %}
+  <!--Keyword clouds go here -->
+
+  <div class="row">
+
+    <!--Search within review here -->
+    <div class="col-sm-4">
+      <h2>Search within reviews:</h2>
+      <form class="form-inline" action="/search-review" id="review-search-form" method="GET">
+        <div class="form-group">
+          <input class="form-control input-lg" name="query" id="query" type="text">
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+    </div>
+    
+    <!--Positive review keywords here -->
+    <div class="col-sm-4">
+      <h3>Positive reviews:</h3>
+    </div>
+
+    <!--Negative review keywords here -->
+    <div class="col-sm-4">
+      <h3>Negative reviews:</h3>
+    </div>
+  </div>
+  <br><hr>
+
+
+  <!--Reviews go here -->
+  <div id="reviews">
+      {% for rev in product.reviews[:10] %}
         <br>
         <h3>{{ rev.summary }}</h3>
 
@@ -68,12 +79,16 @@
         {% endif %}
 
         <h4>Score: {{ rev.score }}</h4>
+        <h4>Date: {{ rev.time }}</h4>
         <p>{{ rev.review }}</p>
         <br>
         <hr>
       {% endfor %}
+  </div>
 
-</div>
+
+</div> <!--container fluid -->
+</div> <!--page -->
 
 <!-- Javascript links -->
 
@@ -82,6 +97,8 @@
 <script src="/static/js/histogram.js"></script>
 <script src="/static/js/search_reviews.js"></script>
 <script src="/static/js/favorites.js"></script>
+<!-- <script src="/static/js/jqcloud.js"></script> -->
+<!-- <link rel="stylesheet" href="/static/css/jqcloud.css"> -->
 
 
 {% endblock %}

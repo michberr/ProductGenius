@@ -15,6 +15,7 @@ body {
     font-family: Helvetica;
     color: black;
     margin-top: 60px;
+    font-size: 16px;
 }
 
 .navbar {
@@ -35,14 +36,9 @@ body {
     background-color: #c7ffff; 
 }
 
-.product-img {
-    float: left;
-    margin: 50px;
-    width: 500px;
-}
 
-/*Product listing page*/
-.product-listing-page {
+/* Any page besides the home page */
+.page {
     padding-top: 40px;
     padding-left: 60px;
     padding-right: 60px;
@@ -50,40 +46,32 @@ body {
 }
 
 .product-box {
-    background-color: white;
     padding-top: 10px;
     padding-left: 40px;
-    font-size: 30px;
+    font-size: 26px;
     padding-bottom: 40px;
 }
 
-
-/*Product details page*/
-.product-page {
-    padding-top: 40px;
-    padding-left: 60px;
-    padding-right: 60px;
-    padding-bottom: 40px;
+.product-details {
+    font-size: 24px;
+}
+.reviews {
+    padding-right: 300px;
 }
 
-
-
-#search-term {
-    color: #939393;
-}
 
 /* unvisited link */
-.product-listing-page a:link {
+.page a:link {
     color: black;
 }
 
 /* visited link */
-.product-listing-page a:visited {
+.page a:visited {
     color: grey;
 }
 
 /* mouse over link */
-.product-listing-page a:hover {
+.page a:hover {
     color: hotpink;
 }
 

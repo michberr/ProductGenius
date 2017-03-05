@@ -1,28 +1,37 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="product-listing-page"> 
+<div class="page"> 
   <h2 id="search-term">You searched for "{{ query }}"</h2>
-  <br>
-  <h1>Products:</h1>
   <br><br><hr>
   {% if not products %}
     <h2>Sorry, there were no products that matched your search.</h2>
   {% endif %}
 
+  <div class="container-fluid">
   {% for asin, title, _, price, image, _, n_scores,_,_,_,_ in products %}
     <div class="product-box">
-      <h3><a href="/product/{{ asin }}">{{ title }}</a></h3><br>
-      <div class="product-image"><a href="/product/{{ asin }}"><img src="{{ image }}"></a></div>
-      <!-- <div class="product-details">
-        <p>Price: ${{ price }}</p>
-        <p>{{ n_scores }} reviews</p>
-        <p>ProductGenius Score: </p>
-      </div> -->
-    </div>
+
+      <!-- Row for title -->
+      <div class="row">
+        <h2><a href="/product/{{ asin }}">{{ title }}</a></h2><br>
+      </div>
+      <div class="row">
+        <div class="col-sm-6">
+          <a href="/product/{{ asin }}"><img src="{{ image }}" height="200" width="200"></a>
+        </div>
+        <div class="col-sm-6">
+            <p>Price: ${{ price }}</p>
+            <p>{{ n_scores }} reviews</p>
+            <p>ProductGenius Score: </p>
+        </div>
+      </div>
+
+    </div> <!-- End of product box class -->
     <hr>
   {% endfor %}
+  </div> <!-- End of container fluid -->
 
-</div>
+</div> <!-- End of page -->
 
 {% endblock %}
