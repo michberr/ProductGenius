@@ -102,16 +102,19 @@ class User(db.Model):
             self.favorite_products.append(product)
             db.session.commit()
 
+    def get_favorite_reviews_for_product(self, asin):
+        """Return a list of review objects that a user favorited for a given product"""
+
+        return self.favorite_reviews.filter_by(asin=asin)
+
     def remove_favorite_reviews(self, asin):
         """Removes all favorited reviews for a product.
 
            This function is called when a user unfavorites a product.
         """
 
-        product = Product.query.get(asin)
-
         # Query for user's favorite reviews for that product
-        product_fav_reviews = product.get_users_favorite_reviews(self.user_id)
+        product_fav_reviews = get_favorite_reviews_for_product(asin)
 
         for review in product_fav_reviews:
             self.favorite_reviews.remove(review)
@@ -191,16 +194,10 @@ class Product(db.Model):
 
         return json.loads(self.scores)
 
-    def get_users_favorite_reviews(self, user_id):
-        """Return a list of review objects that a user favorited for a given product"""
-
-        user = User.query.get(user_id)
-
-        return [rev for rev in self.reviews if rev in user.favorite_reviews]
 
     @staticmethod
-    def find_products(query, index):
-        """Queries database to find products within a search index based on user's search.
+    def find_products(query):
+        """Queries database to find products based on user's search.
 
            This full-text search in postgres stems, removes stop words, applies weights
            to different fields (title is more important than description), and ranks
@@ -216,37 +213,18 @@ class Product(db.Model):
         words = query.strip().split(' ')
         search_formatted = ' & '.join(words)
 
-        base_sql = """SELECT *, ts_rank(product_search.product_info,
-                    to_tsquery('english', :search_terms)) AS relevancy
-                    FROM (SELECT *,
-                        setweight(to_tsvector('english', title), 'A') ||
-                        setweight(to_tsvector('english', description), 'B') AS product_info
-                    FROM products) product_search
-                    WHERE product_search.product_info @@ to_tsquery('english', :search_terms)
-                   """
-
-        if index == "All":
-
-            sql = base_sql + " ORDER BY relevancy DESC;"
-
-        else:
-
-            # If the search index is not "All", filter results by products within
-            # the provided category
-            sql = base_sql + """ AND asin IN
-                                    (SELECT asin
-                                        FROM categories
-                                        INNER JOIN product_categories as pc
-                                        USING (cat_id)
-                                        INNER JOIN products
-                                        USING (asin)
-                                        WHERE pc.cat_name = :category)
-                                ORDER BY relevancy DESC;
-                              """
+        sql = """SELECT *, ts_rank(product_search.product_info,
+                to_tsquery('english', :search_terms)) AS relevancy
+                FROM (SELECT *,
+                    setweight(to_tsvector('english', title), 'A') ||
+                    setweight(to_tsvector('english', description), 'B') AS product_info
+                FROM products) product_search
+                WHERE product_search.product_info @@ to_tsquery('english', :search_terms)
+                ORDER BY relevancy DESC;
+               """
 
         cursor = db.session.execute(sql,
-                                    {'search_terms': search_formatted,
-                                     'category': index})
+                                    {'search_terms': search_formatted})
 
         # Returns a list of product tuples
         return cursor.fetchall()

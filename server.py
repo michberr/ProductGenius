@@ -6,7 +6,6 @@ from jinja2 import StrictUndefined
 from product_indexes import INDEXES
 from model import User, Product, Review, connect_to_db, db
 from product_genius import get_chart_data, format_reviews_to_dicts
-# import sqlalchemy
 
 app = Flask(__name__)
 
@@ -30,19 +29,13 @@ def search_products():
     """Retrieve data from search form and display product results page."""
 
     search_query = request.args.get('query')
-    search_index = request.args.get('index')
 
     # Retrieve products from db that match search_query within search_index
-    products = Product.find_products(search_query, search_index)
+    products = Product.find_products(search_query)
 
-    print len(products[0])
-
-    if len(products) > 0:
-        return render_template("product_listing.html",
-                               query=search_query,
-                               products=products)
-    else:
-        return render_template("no_products.html")
+    return render_template("product_listing.html",
+                           query=search_query,
+                           products=products)
 
 
 @app.route('/product-scores/<asin>.json')
@@ -126,7 +119,7 @@ def display_user_profile(user_id):
     for pr in user.favorite_products:
 
         # Attach an attribute list to the product, with the user's favorited reviews
-        pr.favorited_reviews = pr.get_users_favorite_reviews(user_id)
+        pr.favorited_reviews = user.get_favorite_reviews_for_product(pr.asin)
 
     return render_template("user_page.html",
                            user=user,
