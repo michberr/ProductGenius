@@ -114,7 +114,7 @@ class User(db.Model):
         """
 
         # Query for user's favorite reviews for that product
-        product_fav_reviews = get_favorite_reviews_for_product(asin)
+        product_fav_reviews = self.get_favorite_reviews_for_product(asin)
 
         for review in product_fav_reviews:
             self.favorite_reviews.remove(review)
@@ -193,7 +193,6 @@ class Product(db.Model):
          """
 
         return json.loads(self.scores)
-
 
     @staticmethod
     def find_products(query):
