@@ -17,7 +17,7 @@ def select_n_products(lst, n):
 
     first_third = lst[100:100 + n[0] + 1]
     second_third = lst[1000:1000 + n[1] + 1]
-    third_third = lst[50000:5000 + n[2] + 1]
+    third_third = lst[50000:50000 + n[2] + 1]
 
     top_products.extend(first_third)
     top_products.extend(second_third)
@@ -71,7 +71,11 @@ while True:
 
             product = eval(line)
             if product.get('asin') in asins:
-                metadata_subset.write(line)
+                if product.get('imUrl') and product.get('title') and product.get('price'):
+                    metadata_subset.write(line)
+                else:
+                    # Remove products that don't meet criteria from set
+                    asins.remove(product.get('asin'))
 
         full_metadata.close()
         metadata_subset.close()
