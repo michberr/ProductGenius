@@ -97,9 +97,30 @@ body {
     font-weight: bold;
 }
 
-/*orange : F2671F;
-red: C91B26;
+.review-keyword-title {
+    font-size: 30px;
+}
 
-magenta: 9C0F5F;
-light purple: 60047A;
-dark purple: 160A47;*/
+.keyword-container{
+    width: 500;
+    height: 300;
+}
+
+#negative-keywords .w10, #negative-keywords .w9 {
+    color: #9C0F5F;
+}
+
+#negative-keywords .w8, #negative-keywords .w7, #negative-keywords .w6 {
+    color: #C91B26;
+}
+
+#negative-keywords .w5, #negative-keywords .w4, #negative-keywords .w3 {
+    color: #F2671F;
+}
+
+#negative-keywords .w2, #negative-keywords .w1 {
+    color: #60047A;
+}
+
+
+

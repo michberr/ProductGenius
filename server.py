@@ -5,6 +5,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from jinja2 import StrictUndefined
 from model import User, Product, Review, connect_to_db
 from product_genius import get_chart_data, format_reviews_to_dicts
+import json
 
 app = Flask(__name__)
 
@@ -97,6 +98,8 @@ def display_product_profile(asin):
 
     return render_template("product_details.html",
                            product=product,
+                           pos_words=json.dumps(product.pos_words),
+                           neg_words=json.dumps(product.neg_words),
                            is_favorite=is_favorite,
                            favorite_reviews=favorite_reviews)
 

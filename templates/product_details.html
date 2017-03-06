@@ -19,7 +19,7 @@
   </div><br>
 
   <div class="row">
-    <div class="col-sm-4">
+    <div class="col-sm-3">
       <img src="{{ product.image }}" height="250" width="250"><br><br>
       <div class="product-details">
         <p>Price: ${{ product.price }}</p>
@@ -27,7 +27,7 @@
         <p class="pg-score">ProductGenius Score: {{ "{:.2f}".format(product.pg_score) }}</p>
       </div>
     </div>
-    <div class="col-sm-4">
+    <div class="col-sm-3">
       <h2>Buyer Ratings</h2><br>
       <div class="product-histogram">
           <canvas id="barChart"></canvas>
@@ -41,7 +41,7 @@
   <div class="row">
 
     <!--Search within review here -->
-    <div class="col-sm-4">
+    <div class="col-sm-3">
       <h2>Search within reviews:</h2>
       <form class="form-inline" action="/search-review" id="review-search-form" method="GET">
         <div class="form-group">
@@ -53,17 +53,18 @@
     
     <!--Positive review keywords here -->
     <div class="col-sm-4">
-      <h3>Positive reviews:</h3>
-      {{ product.pos_words }}
+      <br>
+      <div class="review-keyword-title">Positive Reviews:</div>
+      <div class="keyword-container" id="positive-keywords"></div>
     </div>
 
     <!--Negative review keywords here -->
     <div class="col-sm-4">
-      <h3>Negative reviews:</h3>
-      {{ product.neg_words }}
+      <br>
+      <div class="review-keyword-title">Negative Reviews:</div>
+      <div class="keyword-container" id="negative-keywords"></div>
     </div>
-  </div>
-  <br><hr>
+  </div><hr>
 
 
   <!--Reviews go here -->
@@ -95,12 +96,14 @@
 
 <!-- Pass the product's asin to javascript files -->
 <script> var asin = "{{ product.asin }}";</script>
+<!-- Pass the product's positive and negative keywords to js files -->
+<script> var posKey = {{ pos_words|safe }}; </script>
+<script> var negKey = {{ neg_words|safe }}; </script>
 <script src="/static/js/histogram.js"></script>
 <script src="/static/js/search_reviews.js"></script>
 <script src="/static/js/favorites.js"></script>
-<!-- <script src="/static/js/jqcloud.js"></script> -->
-<!-- <link rel="stylesheet" href="/static/css/jqcloud.css"> -->
-
+<script src="/static/js/jqcloud.js"></script>
+<script src="/static/js/word-clouds.js"></script>
 
 {% endblock %}
 

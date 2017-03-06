@@ -7,7 +7,7 @@ function displayReviews(results) {
     var review_html = "";
 
     $.each(results, function(i, obj) {
-        review_html += "<h3>" + obj.summary + "</h3>";
+        review_html += "<br><h3>" + obj.summary + "</h3>";
 
         // If there's a user logged in, display heart
         if (obj.user) {
@@ -21,7 +21,7 @@ function displayReviews(results) {
           }
         }
         review_html += "<p class='score'>Score: " + obj.score + "</p>";
-        review_html += "<p>" + obj.review + "</p>";
+        review_html += "<p>" + obj.review + "</p><br><hr>";
     });
 
     // Update the reviews html
