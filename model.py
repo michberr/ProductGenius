@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 import json
+import numpy as np
 
 db = SQLAlchemy()
 
@@ -105,7 +106,7 @@ class User(db.Model):
     def get_favorite_reviews_for_product(self, asin):
         """Return a list of review objects that a user favorited for a given product"""
 
-        return self.favorite_reviews.filter_by(asin=asin)
+        return self.favorite_reviews.filter_by(asin=asin).all()
 
     def remove_favorite_reviews(self, asin):
         """Removes all favorited reviews for a product.
@@ -113,7 +114,7 @@ class User(db.Model):
            This function is called when a user unfavorites a product.
         """
 
-        # Query for user's favorite reviews for that product
+        # Query a user's favorite reviews for that product
         product_fav_reviews = self.get_favorite_reviews_for_product(asin)
 
         for review in product_fav_reviews:
@@ -123,11 +124,11 @@ class User(db.Model):
 
     @classmethod
     def register_user(cls, name, email, password):
-        """Register a new user and return a message to flash"""
+        """Register a new user"""
 
-        user = User(name=name,
-                    email=email,
-                    password=password)
+        user = cls(name=name,
+                   email=email,
+                   password=password)
 
         # Add user to the session
         db.session.add(user)
@@ -142,12 +143,13 @@ class Product(db.Model):
     __tablename__ = "products"
 
     asin = db.Column(db.Text, primary_key=True)
-    title = db.Column(db.Text)
+    title = db.Column(db.Text, nullable=False)
     description = db.Column(db.Text)
-    price = db.Column(db.Float)
+    price = db.Column(db.Float, nullable=False)
     image = db.Column(db.Text, nullable=False)   # link to image
-    scores = db.Column(db.JSON)                  # dictionary with 1-5 star ratings
+    scores = db.Column(db.JSON)                  # List with 1-5 star ratings stored as json
     n_scores = db.Column(db.Integer)
+    pg_score = db.Column(db.Float)             # Product Genius score
     pos_words = db.Column(db.JSON)               # List of positive keywords stored as json
     neg_words = db.Column(db.JSON)               # List of negative keywords stored as json
 
@@ -185,7 +187,7 @@ class Product(db.Model):
         return distribution
 
     def get_scores(self):
-        """Returns the distribution of scores for a product as a list.
+        """Return the distribution of scores for a product as a list.
 
            ex:
             if product "P1234" had one 2-star review and four 5-star reviews,
@@ -193,6 +195,37 @@ class Product(db.Model):
          """
 
         return json.loads(self.scores)
+
+    def get_total_stars(self):
+        """Return a product's total stars and n reviews as a tuple"""
+
+        scores = self.get_scores()
+
+        stars = sum(np.array(scores) * np.array([1, 2, 3, 4, 5]))
+
+        # Return a tuple with (nstars, nscores)
+        return (stars, self.n_scores)
+
+    def calculate_pg_score(self, pg_average=3.0, C=10):
+        """Calculate Product Genius score with bayesian average"""
+
+        stars, n_scores = self.get_total_stars()
+        pg_score = (C * pg_average + stars)/(C + n_scores)
+
+        return pg_score
+
+    @classmethod
+    def get_mean_product_score(cls):
+        """Calculate mean product score across all products."""
+
+        products = cls.query.all()
+
+        # List of product (star, nscores) tuples
+        star_tups = [pr.get_total_stars() for pr in products]
+
+        product_average = float(sum([tup[0] for tup in star_tups]))/sum([tup[1] for tup in star_tups])
+
+        return product_average
 
     @staticmethod
     def find_products(query):
@@ -236,7 +269,7 @@ class Review(db.Model):
 
     review_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     review = db.Column(db.Text, nullable=False)
-    asin = db.Column(db.Text, db.ForeignKey('products.asin'))
+    asin = db.Column(db.Text, db.ForeignKey('products.asin'), nullable=False)
     score = db.Column(db.Integer, nullable=False)
     summary = db.Column(db.Text, nullable=False)
     time = db.Column(db.DateTime, nullable=False)
