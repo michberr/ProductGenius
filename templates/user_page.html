@@ -9,20 +9,20 @@
   <h2>Favorite Products: </h2><hr>
 
     {% for pr in favorite_products %}
-        <h3>{{ pr.title }}</h3>
+        <h3 class="product-name"><a href="/product/{{ pr.asin }}">{{ pr.title }}</a></h3>
         <div>
           <a href="/product/{{ pr.asin }}"><img src="{{ pr.image }}" width="200" height="200"></a>
         </div><br><br>
       
-      <div>
+      <div class="reviews">
         {% for review in pr.favorited_reviews %}
-          <h4 class="emphasize">{{ review.summary }}</h4>
+          <h3>{{ review.summary }}</h3>
+          <div class="score"> Score: {{ review.score }}</div>
           {{ review.review }}
           <br><br>
         {% endfor %} 
-      </div><br>
+      </div><br><hr><br>
     {% endfor %}
-    <hr>
   {% endblock %}
 
 </div>
