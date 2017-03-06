@@ -12,8 +12,8 @@ html, body {
 
 body { 
     padding: 0px; 
-    font-family: Helvetica;
-    color: black;
+    font-family: Avenir;
+    color: #292f33;
     margin-top: 60px;
     font-size: 16px;
 }
@@ -21,7 +21,9 @@ body {
 .navbar {
     font-size: 20px;
     padding: 5px;
-    font-family: Helvetica
+    font-family: Helvetica;
+    color: black;
+    background-color: white;
 }
 
 .jumbotron {
@@ -33,7 +35,7 @@ body {
 
 /*Highlighting on review words after search */
 .highlight { 
-    background-color: #c7ffff; 
+    background-color: rgba(110, 211, 207, 0.5);
 }
 
 
@@ -55,26 +57,49 @@ body {
 .product-details {
     font-size: 24px;
 }
+
 .reviews {
     padding-right: 300px;
+    font-size: 18px;
 }
-
 
 /* unvisited link */
 .page a:link {
-    color: black;
+    color: #292f33;
 }
 
 /* visited link */
 .page a:visited {
-    color: grey;
-}
-
-/* mouse over link */
-.page a:hover {
-    color: hotpink;
+    color: #AFABA8;
 }
 
 .product-histogram {
     padding-top: 10px;
+    margin-right: 80px;
 }
+
+.pg-score {
+    font-weight: bold;
+}
+
+.alert, .alert-info {
+    margin: 0;
+    font-family: Avenir, sans-serif;
+}
+
+.product-name {
+    font-family: Helvetica;
+    font-size: 28px;
+}
+
+.score {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+/*orange : F2671F;
+red: C91B26;
+
+magenta: 9C0F5F;
+light purple: 60047A;
+dark purple: 160A47;*/

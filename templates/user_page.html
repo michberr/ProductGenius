@@ -1,24 +1,29 @@
 {% extends 'base.html' %}
-  
 {% block content %}
 
-<h1>User: {{ user.name }}</h1><br><br>
+<div class="page">
+<div class="container-fluid">
 
-<h2>Favorite Products: </h2>
+  <h1>User: {{ user.name }}</h1><br><br>
 
-  {% for pr in favorite_products %}
-      <h3>{{ pr.title }}</h3>
+  <h2>Favorite Products: </h2><hr>
+
+    {% for pr in favorite_products %}
+        <h3>{{ pr.title }}</h3>
+        <div>
+          <a href="/product/{{ pr.asin }}"><img src="{{ pr.image }}" width="200" height="200"></a>
+        </div><br><br>
+      
       <div>
-        <a href="/product/{{ pr.asin }}"><img src="{{ pr.image }}"></a>
-      </div><br><br>
-    
-    <div>
-      <h4>Favorite Reviews:</h4>
-      {% for review in pr.favorited_reviews %}
-        <h5>{{ review.summary }}</h5>
-        {{ review.review }}
-      {% endfor %} 
-    </div><br><br>
-  {% endfor %}
+        {% for review in pr.favorited_reviews %}
+          <h4 class="emphasize">{{ review.summary }}</h4>
+          {{ review.review }}
+          <br><br>
+        {% endfor %} 
+      </div><br>
+    {% endfor %}
+    <hr>
+  {% endblock %}
 
-{% endblock %}
+</div>
+</div>

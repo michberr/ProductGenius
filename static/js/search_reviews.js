@@ -20,11 +20,8 @@ function displayReviews(results) {
             review_html += "<img src='/static/img/heart-empty.jpg' class='heart' height='35' width='35' data-review-id=" + obj.review_id +">";
           }
         }
-        review_html += "<ul>";
-        review_html += "<li>Score:" + obj.score + "</li>";
-        review_html += "<li>" + obj.review + "</li>";
-        review_html += "</ul>";
-
+        review_html += "<p class='score'>Score: " + obj.score + "</p>";
+        review_html += "<p>" + obj.review + "</p>";
     });
 
     // Update the reviews html

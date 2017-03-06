@@ -9,12 +9,12 @@
   {% endif %}
 
   <div class="container-fluid">
-  {% for asin, title, _, price, image, _, n_scores,_,_,_,_ in products %}
+  {% for asin, title, _, price, image, _, n_scores,pg_score,_,_,_,_ in products %}
     <div class="product-box">
 
       <!-- Row for title -->
       <div class="row">
-        <h2><a href="/product/{{ asin }}">{{ title }}</a></h2><br>
+        <div class="product-name"><a href="/product/{{ asin }}">{{ title }}</a></div><br>
       </div>
       <div class="row">
         <div class="col-sm-6">
@@ -23,7 +23,7 @@
         <div class="col-sm-6">
             <p>Price: ${{ price }}</p>
             <p>{{ n_scores }} reviews</p>
-            <p>ProductGenius Score: </p>
+            <p class="pg-score">ProductGenius Score: {{ "{:.2f}".format(pg_score) }}</p>
         </div>
       </div>
 

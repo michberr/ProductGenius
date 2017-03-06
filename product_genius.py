@@ -11,10 +11,10 @@ def get_chart_data(score_list):
     data_dict = {
         "labels": ["1", "2", "3", "4", "5"],
         "datasets": [{
-            "label": "Customer Ratings",
+            "label": "Buyer Ratings",
             "data": score_list,
-            "backgroundColor": 'rgba(54, 162, 235, 0.6)',
-            "hoverBackgroundColor": 'rgba(54, 162, 235, 1)',
+            "backgroundColor": 'rgba(96, 4, 122, 0.6)',
+            "hoverBackgroundColor": 'rgba(96, 4, 122, 1)',
             "borderWidth": 5
         }]
     }
