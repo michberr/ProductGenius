@@ -118,7 +118,7 @@ def create_search_indexes():
 
 
 def count_scores():
-    """Calculate score distribution and update product object in db """
+    """Calculate score distribution, pg-score and update product object in db """
 
     print "======================"
     print "calculating review distributions"
@@ -130,6 +130,7 @@ def count_scores():
         score_distribution = product.calculate_score_distribution()
         product.scores = json.dumps(score_distribution)
         product.n_scores = sum(score_distribution)
+        product.pg_score = product.calculate_pg_score()
 
         db.session.commit()
 
@@ -146,8 +147,12 @@ def extract_product_keywords_from_reviews():
         # keywords with the highest likelihood of being in positive
         # and negative reviews
 
+        # Include the product's name as stop words
+        more_stop_words = product.title.split(' ')
+        more_stop_words = [w.lower() for w in more_stop_words]
+
         # keywords is a tuple with a list of positive keywords and negative keywords
-        keywords = get_keywords_from_naive_bayes(product)
+        keywords = get_keywords_from_naive_bayes(product, more_stop_words)
 
         # need to do tuple unpacking
         product.pos_words = keywords[0]
@@ -214,9 +219,9 @@ if __name__ == "__main__":
 
     H = HTMLParser()
 
-    #load_products('data/electronics_metadata_subset.json')
-    #load_reviews('data/electronics_reviews_subset.json')
-    #count_scores()
+    load_products('data/electronics_metadata_subset.json')
+    load_reviews('data/electronics_reviews_subset.json')
+    count_scores()
     extract_product_keywords_from_reviews()
     create_search_indexes()
     create_users()
