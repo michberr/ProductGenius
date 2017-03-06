@@ -3,8 +3,7 @@
 from flask import Flask, render_template, redirect, request, flash, session, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from jinja2 import StrictUndefined
-from product_indexes import INDEXES
-from model import User, Product, Review, connect_to_db, db
+from model import User, Product, Review, connect_to_db
 from product_genius import get_chart_data, format_reviews_to_dicts
 
 app = Flask(__name__)
@@ -20,8 +19,7 @@ app.jinja_env.undefined = StrictUndefined
 def display_homepage():
     """Display Homepage."""
 
-    return render_template("homepage.html",
-                           indexes=INDEXES)
+    return render_template("homepage.html")
 
 
 @app.route('/search')
@@ -116,14 +114,16 @@ def display_user_profile(user_id):
     user_id = int(user_id)
     user = User.query.get(user_id)
 
-    for pr in user.favorite_products:
+    favorite_products = user.favorite_products.all()
+
+    for pr in favorite_products:
 
         # Attach an attribute list to the product, with the user's favorited reviews
         pr.favorited_reviews = user.get_favorite_reviews_for_product(pr.asin)
 
     return render_template("user_page.html",
                            user=user,
-                           favorite_products=user.favorite_products)
+                           favorite_products=favorite_products)
 
 
 @app.route('/favorite-product', methods=['POST'])
@@ -169,7 +169,6 @@ def favorite_review():
         user.add_favorite_product_from_review(asin)
 
     return favorite_status
-
 
 
 ################# Login, logout, and registration ###############
