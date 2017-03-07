@@ -5,11 +5,20 @@
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
+from sklearn.feature_extraction import text
+# from nltk.stem.porter import *
+from random import sample
+
+# Set of additional stop words to add to the builtin sklearn stop words
+PG_STOP_WORDS = ["great", "good", "bad", "awful", "excellent", "terrible",
+                 "amazing", "worst", "perfect", "horrible", "best"]
+
+# stemmer = PorterStemmer()
 
 
-def get_keywords_from_naive_bayes(product):
+def get_keywords_from_naive_bayes(product, new_stop_words, validation=False):
     """Extracts positive/negative words from a product's reviews with Naive Bayes
 
     Input is a product object.
@@ -40,7 +49,9 @@ def get_keywords_from_naive_bayes(product):
             reviews.append(rev.review)
 
     # Instantiate a Text-frequency, inverse document frequency vectorizer
-    vectorizer = TfidfVectorizer(stop_words='english')
+    new_stop_words.extend(PG_STOP_WORDS)
+    stop_words = text.ENGLISH_STOP_WORDS.union(new_stop_words)
+    vectorizer = CountVectorizer(stop_words=stop_words)
 
     # Convert our list of reviews into a sparse matrix of word counts where the
     # rows are reviews and the columns are words
@@ -67,11 +78,17 @@ def get_keywords_from_naive_bayes(product):
     pos_words = [tup[1] for tup in pos_probs_and_words]
     neg_words = [tup[1] for tup in neg_probs_and_words]
 
-    # returns a tuple of positive and negative keywords
-    return (pos_words, neg_words)
+    if validation:
+        # If validation argument set to true, run KFolds
+        precision, recall = cross_validate(nb, X, y)
+        return (precision, recall)
+
+    else:
+        # Return tuple of positive and negative keywords
+        return (pos_words, neg_words)
 
 
-def cross_validation(nb, X, y):
+def cross_validate(nb, X, y):
     """Run cross validation on a naive bayes review classifier"""
 
     # Do cross-validation with 5 folds
@@ -104,9 +121,54 @@ def cross_validation(nb, X, y):
             precision.append(p[1])
             recall.append(r[1])
 
-    return (precision, recall)
+        avg_precision = sum(precision)/float(len(precision))
+        avg_recall = sum(recall)/float(len(recall))
 
+    return (avg_precision, avg_recall)
 
-# if __name__ == "__main__":
+############################################################################
 
-    # Run cross validation on 100 of the products and average the data
+if __name__ == "__main__":
+
+    # Run cross validation on 50 of the products and average the data
+
+    from model import Product, connect_to_db
+    from server import app
+
+    # Connect to the db
+    connect_to_db(app)
+
+    # Get all products with at least 20 reviews
+    products = Product.query.filter(Product.n_scores > 20).all()
+
+    print len(products)
+
+    # Create a list of 100 product indexes to run cross-validation on
+    validation_set = sample(range(0, len(products) - 1), 50)
+
+    # List to hold precision and recall
+    precision = []
+    recall = []
+
+    for idx in validation_set:
+        product = products[idx]
+
+        print "Validating product"
+
+        # Include the product's name as stop words
+        more_stop_words = product.title.split(' ')
+        more_stop_words = [w.lower() for w in more_stop_words]
+
+        p, r = get_keywords_from_naive_bayes(product,
+                                             more_stop_words,
+                                             True)
+        precision.append(p)
+        recall.append(r)
+
+    print precision
+    print "Average precision over 50 products is: {}".format(
+        sum(precision)/float(len(precision)))
+
+    print recall
+    print "Average recall over 50 products is: {}".format(
+        sum(recall)/float(len(recall)))
