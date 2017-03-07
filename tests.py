@@ -4,6 +4,7 @@ from server import app
 from model import db, connect_to_db, example_data, User, Product, Review
 import json
 
+
 class ProductGeniusTests(unittest.TestCase):
     """Tests for Product Genius routes that don't require db."""
 
@@ -285,6 +286,249 @@ class TestFavoriting(unittest.TestCase):
         user.remove_favorite_reviews("A1")
 
         self.assertFalse(user.is_favorite_review(1))
+
+
+class FlaskTestNoUser(unittest.TestCase):
+    """Test flask routes without a user."""
+
+    def setUp(self):
+        """Stuff to do before every test."""
+
+        self.client = app.test_client()
+        app.config['TESTING'] = True
+
+        # Connect to test database
+        connect_to_db(app, "postgresql:///testdb")
+
+        # Create tables and add sample data
+        db.create_all()
+        example_data()
+
+        p = Product.query.get("A1")
+        scores = p.calculate_score_distribution()
+        p.scores = json.dumps(scores)
+        p.n_scores = sum(scores)
+        p.pg_score = p.calculate_pg_score()
+        p.pos_words = []
+        p.neg_words = []
+
+        db.session.commit()
+
+    def tearDown(self):
+        """Do at end of every test."""
+
+        db.session.close()
+        db.drop_all()
+
+    def test_product_listing_page(self):
+        """Test that a product listing page loads"""
+
+        result = self.client.get("/search?query=headphones",
+                                 data={"query": "headphones"})
+
+        self.assertIn("You searched for \"headphones\"", result.data)
+        self.assertIn("Black Headphones", result.data)
+
+    def test_product_details_page(self):
+        """Test that a product details page loads"""
+
+        result = self.client.get("/product/A1")
+
+        # Test that product title is on page
+        self.assertIn("Black Headphones", result.data)
+
+        # Test that product genius score is on page
+        self.assertIn("Product Genius Score: 3.08", result.data)
+
+        # Test that review data is on page
+        self.assertIn("These headphones had excellent sound quality", result.data)
+        self.assertIn("Terrible waste of money", result.data)
+
+    def test_register_user(self):
+        """Test that registration post route works"""
+
+        result = self.client.post("/register",
+                                  data={"name": "humpty dumpty",
+                                        "email": "wallsitter@yahoo.com",
+                                        "password": "eggshell"},
+                                  follow_redirects=True)
+
+        # Should redirect to login and flash a message
+        self.assertIn("Welcome to ProductGenius", result.data)
+
+    def test_login_user(self):
+        """Test that login post route works"""
+
+        result = self.client.post("/login",
+                                  data={"email": "user@user.com",
+                                        "password": "abc"},
+                                  follow_redirects=True)
+
+        # Should redirect to login and flash a message
+        self.assertIn("Logged in as user", result.data)
+
+    def test_nohearts_without_user(self):
+        """Test that hearts and favorite button do not appear without login"""
+
+        result = self.client.get("/product/A1")
+
+        self.assertNotIn("class=\"heart\"", result.data)
+        self.assertNotIn("id=\"product-fav-button\"", result.data)
+
+    def test_navbar_without_user(self):
+        """Test that navbar shows register, login when no user."""
+
+        result = self.client.get("/")
+
+        self.assertIn("<a href=\"/register\">Register</a>", result.data)
+        self.assertIn("<a href=\"/login\">Login</a>", result.data)
+
+
+class FlaskTestUser(unittest.TestCase):
+    """Test flask routes with a user."""
+
+    def setUp(self):
+        """Stuff to do before every test."""
+
+        self.client = app.test_client()
+        app.config['TESTING'] = True
+
+        # Connect to test database
+        connect_to_db(app, "postgresql:///testdb")
+
+        # Create tables and add sample data
+        db.create_all()
+        example_data()
+
+        # Set up product object
+        p = Product.query.get("A1")
+        scores = p.calculate_score_distribution()
+        p.scores = json.dumps(scores)
+        p.n_scores = sum(scores)
+        p.pg_score = p.calculate_pg_score()
+        p.pos_words = []
+        p.neg_words = []
+
+        db.session.commit()
+
+        # Add some favorite products and reviews for a user
+        user = User.query.get(1)
+        a1 = Product.query.get("A1")
+        user.favorite_products.append(a1)
+        review1 = Review.query.get(1)
+        user.favorite_reviews.append(review1)
+
+        db.session.commit()
+
+        # Add user to session
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess['user'] = {"id": 1,
+                                "name": "user"}
+
+    def tearDown(self):
+        """Do at end of every test."""
+
+        db.session.close()
+        db.drop_all()
+
+    def test_user_page(self):
+        """Test that a user's page loads"""
+
+        result = self.client.get("/user/1")
+
+        self.assertIn("User: user", result.data)
+
+        # Test user's favorite products display
+        self.assertIn("www.headphones.com/headphone.jpg", result.data)
+
+        # Test user's favorite reviews display
+        self.assertIn("Great Headphones", result.data)
+
+    def test_hearts_with_user(self):
+        """Test that hearts and favorite button appear when user is logged in"""
+
+        result = self.client.get("/product/A1")
+
+        self.assertIn("class=\"heart\"", result.data)
+        self.assertIn("id=\"product-fav-button\"", result.data)
+
+    def test_navbar_with_user(self):
+        """Test that navbar shows logout, user while user logged in."""
+
+        result = self.client.get("/")
+
+        self.assertIn("<a href=\"/logout\">Logout</a>", result.data)
+        self.assertIn("<a href=\"/user/1\">user</a>", result.data)
+
+    def test_search_in_reviews(self):
+        """Test that ajax call to search within a review works"""
+
+        result = self.client.get('/search-review/A1.json?query=terrible',
+                                 data={"query": "terrible"},
+                                 follow_redirects=True)
+
+        # Test that reviews not matching query are not in output
+        self.assertNotIn("Great Headphones", result.data)
+
+    def test_favoriting_product(self):
+        """Test that favoriting a product updates the db"""
+
+        result = self.client.post('favorite-product',
+                                  data={"asin": "A2"})
+        user = User.query.get(1)
+
+        self.assertEqual(result.status_code, 200)
+        self.assertTrue(user.is_favorite_product("A2"))
+
+    def test_unfavoriting_product(self):
+        """Test that unfavoriting a product updates the db and
+           removes all favorite reviews
+        """
+
+        result = self.client.post('favorite-product',
+                                  data={"asin": "A1"})
+        user = User.query.get(1)
+
+        self.assertEqual(result.status_code, 200)
+        self.assertFalse(user.is_favorite_product("A1"))
+
+    def test_favoriting_review(self):
+        """Test that favoriting a review updates the db"""
+
+        result = self.client.post('favorite-review',
+                                  data={"reviewID": 2,
+                                        "asin": "A1"})
+        user = User.query.get(1)
+
+        self.assertEqual(result.status_code, 200)
+        self.assertTrue(user.is_favorite_review(2))
+
+    def test_unfavoriting_review(self):
+        """Test that unfavoriting a review updates the db"""
+
+        result = self.client.post('favorite-review',
+                                  data={"reviewID": 1,
+                                        "asin": "A1"})
+        user = User.query.get(1)
+
+        self.assertEqual(result.status_code, 200)
+        self.assertFalse(user.is_favorite_review(1))
+
+    def test_favoriting_review_before_product(self):
+        """Test that favoriting a review before the product
+            favorites the product.
+        """
+
+        result = self.client.post('favorite-review',
+                                  data={"reviewID": 3,
+                                        "asin": "A2"})
+        user = User.query.get(1)
+
+        self.assertEqual(result.status_code, 200)
+        self.assertTrue(user.is_favorite_review(3))
+        self.assertTrue(user.is_favorite_product("A2"))
+
 
 
 ###############################################################
