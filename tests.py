@@ -1,97 +1,48 @@
 import unittest
 
 from server import app
-from model import db, connect_to_db, example_data
-
+from model import db, connect_to_db, example_data, User, Product, Review
+import json
 
 class ProductGeniusTests(unittest.TestCase):
-    """Tests for Product Genius."""
+    """Tests for Product Genius routes that don't require db."""
 
     def setUp(self):
         """Stuff to do before every test"""
 
         self.client = app.test_client()
         app.config['TESTING'] = True
-
 
     def test_homepage(self):
         """Test that homepage renders."""
 
         result = self.client.get("/")
+        self.assertEqual(result.status_code, 200)
         self.assertIn("Get the best information before you buy", result.data)
 
+    def test_login_page(self):
+        """Test that login page renders."""
 
-    def test_product_listing_page(self):
-        """Test that product listing page renders."""
+        result = self.client.get("/login")
+        self.assertEqual(result.status_code, 200)
+        self.assertIn("Email", result.data)
+        self.assertIn("Password", result.data)
 
-        pass
+    def test_register_page(self):
+        """Test that register page renders."""
 
-
-    def test_product_details_page(self):
-        """Test that product details page renders."""
-
-        pass
-
-
-    def test_user_page(self):
-        """Test that user details page renders."""
-
-        pass
-
-
-class TestUser(unittest.TestCase):
-    """Tests to run when a user is logged in"""
-
-    def setUp(self):
-        """Stuff to do before every test"""
-
-        app.config['TESTING'] = True
-        self.client = app.test_client()
-
-        with self.client as c:
-            with c.session_transaction() as sess:
-                sess['user_id'] = 1
+        result = self.client.get("/register")
+        self.assertEqual(result.status_code, 200)
+        self.assertIn("Name", result.data)
+        self.assertIn("Email", result.data)
+        self.assertIn("Password", result.data)
 
 
-    def test_favorite_elements(self):
-        """Test if html elements for favoriting products and
-        reviews appear if user logged in
-        """
+class TestDBMethods(unittest.TestCase):
+    """Test basic methods for db classes.
 
-        result = self.client.get("/product______")
-
-        # Assert that review hearts are not on the page
-        self.assertIn("class='heart'", result.data)
-
-        # Assert that the product favorite button is not on the page
-        self.assertIn("product-fav-button", result.data)
-
-
-class TestNoUser(unittest.TestCase):
-    """Tests to run when no user is logged in"""
-
-    def setUp(self):
-
-        app.config['TESTING'] = True
-        self.client = app.test_client()
-
-
-    def test_no_favorites(self):
-        """Test if html elements for favoriting products and
-        reviews do not appear if not logged in
-        """
-
-        result = self.client.get("/product______")
-
-        # Assert that review hearts are not on the page
-        self.assertNotIn("class='heart'", result.data)
-
-        # Assert that the product favorite button is not on the page
-        self.assertNotIn("product-fav-button", result.data)
-
-
-class TestServerWithDB(unittest.TestCase):
-    """Flask tests that use the database."""
+        These tests do not require extra setup for any db objects
+    """
 
     def setUp(self):
         """Stuff to do before every test."""
@@ -99,17 +50,12 @@ class TestServerWithDB(unittest.TestCase):
         self.client = app.test_client()
         app.config['TESTING'] = True
 
-        # Connect to test database (uncomment when testing database)
+        # Connect to test database
         connect_to_db(app, "postgresql:///testdb")
 
-        # Create tables and add sample data (uncomment when testing database)
+        # Create tables and add sample data
         db.create_all()
         example_data()
-
-        with self.client as c:
-            with c.session_transaction() as sess:
-                sess['user_id'] = 1
-
 
     def tearDown(self):
         """Do at end of every test."""
@@ -117,49 +63,93 @@ class TestServerWithDB(unittest.TestCase):
         db.session.close()
         db.drop_all()
 
+    def test_register_user(self):
+        """Test that registering a new user works"""
 
-    def test_register(self):
-        """Test whether the db updates with a new user"""
+        User.register_user(name="Buddy Holly",
+                           email="buddy@me.com",
+                           password="abc")
 
-        pass
+        user_count = User.query.filter_by(email="buddy@me.com").count()
 
+        self.assertEqual(user_count, 1)
 
-    def test_log_in(self):
-        """Test messages when a user signs in incorrectly"""
+    def test_calculate_score_distribution(self):
+        """Test that Product.calculate_score_distribution() returns correct scores"""
 
-        pass
+        product1 = Product.query.get("A1")
+        scores1 = product1.calculate_score_distribution()
 
+        product2 = Product.query.get("A2")
+        scores2 = product2.calculate_score_distribution()
 
-    def test_search_in_reviews(self):
-        """Test that ajax call to search within a review works"""
+        self.assertEqual(scores1, [0, 1, 0, 0, 1])
+        self.assertEqual(scores2, [0, 0, 1, 0, 0])
 
-        pass
+    def test_find_products(self):
+        """Test that full-text search works on products"""
 
+        results = Product.find_products('Headphones')
 
-    def test_favoriting_product(self):
-        """Test that favoriting a product updates the db"""
-
-        pass
-
-
-    def test_favoriting_review(self):
-        """Test that favoriting a review updates the db"""
-
-        pass
-
-
-    def test_unfavoriting_product(self):
-        """Test that unfavoriting a product updates the db and
-           removes all favorite reviews
-        """
-
-        pass
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0][0], "A1")
 
 
-    def test_favoriting_review_before_product(self):
-        """Test that favoriting a review before the product
-            favorites the product.
-        """
+class TestPGScores(unittest.TestCase):
+    """Test that product genius scores are calculated correctly"""
+
+    def setUp(self):
+        """Stuff to do before every test."""
+
+        self.client = app.test_client()
+        app.config['TESTING'] = True
+
+        # Connect to test database
+        connect_to_db(app, "postgresql:///testdb")
+
+        # Create tables and add sample data
+        db.create_all()
+        example_data()
+
+        # Add an attribute for scores and n_scores to every product
+        products = Product.query.all()
+
+        for p in products:
+            scores = p.calculate_score_distribution()
+            p.scores = json.dumps(scores)
+            p.n_scores = sum(scores)
+
+            db.session.commit()
+
+    def tearDown(self):
+        """Do at end of every test."""
+
+        db.session.close()
+        db.drop_all()
+
+    def test_get_total_stars(self):
+        """Test that Product.get_total_stars() returns correct amount"""
+
+        product1 = Product.query.get("A1")
+        stars1 = product1.get_total_stars()
+
+        product2 = Product.query.get("A2")
+        stars2 = product2.get_total_stars()
+
+        self.assertEqual(stars1, (7, 2))
+        self.assertEqual(stars2, (3, 1))
+
+    def test_calculate_pg(self):
+        """Test that Product.calculate_pg_score() returns correct amount"""
+
+        product1 = Product.query.get("A1")
+        pg1 = product1.calculate_pg_score()
+
+        product2 = Product.query.get("A2")
+        pg2 = product2.calculate_pg_score()
+
+        self.assertEqual(pg1, 37.0/12)
+        self.assertEqual(pg2, 3.0)
 
 ###############################################################
 

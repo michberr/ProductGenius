@@ -370,13 +370,55 @@ favorite_reviews = db.Table('favorite_reviews',
 ##############################################################################
 # Helper functions
 
-def connect_to_db(app):
+def connect_to_db(app, db_uri="postgresql:///product_genius"):
     """Connect the database to Flask app."""
 
     # Configure to use PostgreSQL database
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///product_genius'
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
     db.app = app
     db.init_app(app)
+
+def example_data():
+    """Create example data for the test database."""
+
+    product1 = Product(asin='A1',
+                       title='Black Headphones',
+                       description="Black Headphones",
+                       price=100,
+                       image="www.headphones.com/headphone.jpg",
+                       categories=[])
+
+    review1 = Review(review='These headphones had excellent sound quality',
+                     asin='A1',
+                     score=5,
+                     summary="Great Headphones",
+                     time="2016-02-12 00:00:00")
+
+    review2 = Review(review='Terrible waste of money',
+                     asin='A1',
+                     score=2,
+                     summary="Poor quality",
+                     time="2014-05-03 17:45:35")
+
+    product2 = Product(asin='A2',
+                       title='Monitor',
+                       description="Monitor screen",
+                       price=400,
+                       image="www.monitors.com/monitor.jpg",
+                       categories=[])
+
+    review3 = Review(review='This monitor broke after a week',
+                     asin='A2',
+                     score=3,
+                     summary="Trash",
+                     time="2011-05-03 17:45:35")
+
+    user = User(name='user',
+                email="user@user.com",
+                password="abc")
+
+    db.session.add_all([product1, review1, review2, product2, review3, user])
+    db.session.commit()
 
 
 if __name__ == "__main__":
