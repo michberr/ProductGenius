@@ -87,12 +87,44 @@ class TestDBMethods(unittest.TestCase):
         self.assertEqual(scores2, [0, 0, 1, 0, 0])
 
     def test_find_products(self):
-        """Test that full-text search works on products"""
+        """Test that full-text search works on products.
 
-        results = Product.find_products('Headphones')
+           In addition to finding terms in a product's
+           title or description, we want to test that
+           postgres is stemming and lowercasing the queries.
+        """
 
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0][0], "A1")
+        # Check that postgres is dealing with case
+        results1 = Product.find_products('headphones')
+
+        self.assertEqual(len(results1), 1)
+        self.assertEqual(results1[0][0], "A1")
+
+        # Check that postgres is stemming
+        results2 = Product.find_products('screens')
+
+        self.assertEqual(len(results2), 1)
+        self.assertEqual(results2[0][0], "A2")
+
+    def test_find_reviews(self):
+        """Test that full-text search works on reviews.
+
+           In addition to finding terms in a review's
+           summary or body, we want to test that
+           postgres is stemming and lowercasing the queries.
+        """
+
+        # Check that postgres is stemming
+        results1 = Review.find_reviews('A1', 'wasted')
+
+        self.assertEqual(len(results1), 1)
+        self.assertIn("waste of money", results1[0][1])
+
+        # Check that postgres is dealing with case
+        results2 = Review.find_reviews('A2', 'trash')
+
+        self.assertEqual(len(results2), 1)
+        self.assertIn("monitor broke", results2[0][1])
 
 
 class TestPGScores(unittest.TestCase):
@@ -150,6 +182,7 @@ class TestPGScores(unittest.TestCase):
 
         self.assertEqual(pg1, 37.0/12)
         self.assertEqual(pg2, 3.0)
+
 
 ###############################################################
 
