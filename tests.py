@@ -184,6 +184,109 @@ class TestPGScores(unittest.TestCase):
         self.assertEqual(pg2, 3.0)
 
 
+class TestFavoriting(unittest.TestCase):
+    """Tests methods for favoriting products and reviews"""
+
+    def setUp(self):
+        """Stuff to do before every test."""
+
+        self.client = app.test_client()
+        app.config['TESTING'] = True
+
+        # Connect to test database
+        connect_to_db(app, "postgresql:///testdb")
+
+        # Create tables and add sample data
+        db.create_all()
+        example_data()
+
+        # Add some favorite products and reviews for a user
+        user = User.query.get(1)
+
+        a1 = Product.query.get("A1")
+        user.favorite_products.append(a1)
+
+        review1 = Review.query.get(1)
+        user.favorite_reviews.append(review1)
+
+        db.session.commit()
+
+    def tearDown(self):
+        """Do at end of every test."""
+
+        db.session.close()
+        db.drop_all()
+
+    def test_get_favorite_review_ids(self):
+        """Test that User.get_favorite_review_ids() works"""
+
+        user = User.query.get(1)
+        fav_reviews = user.get_favorite_review_ids()
+
+        self.assertEqual(len(fav_reviews), 1)
+        self.assertIsInstance(fav_reviews, set)
+
+    def test_is_favorite_product(self):
+        """Test that User.is_favorite_product() works"""
+
+        user = User.query.get(1)
+        self.assertTrue(user.is_favorite_product("A1"))
+        self.assertFalse(user.is_favorite_product("A2"))
+
+    def test_is_favorite_review(self):
+        """Test that User.is_favorite_review() works"""
+
+        user = User.query.get(1)
+        self.assertTrue(user.is_favorite_review(1))
+        self.assertFalse(user.is_favorite_review(3))
+
+    def test_update_favorite_product(self):
+        """Test that User.update_favorite_product() works"""
+
+        user = User.query.get(1)
+
+        user.update_favorite_product("A1")
+        user.update_favorite_product("A2")
+
+        self.assertFalse(user.is_favorite_product("A1"))
+        self.assertTrue(user.is_favorite_product("A2"))
+
+    def test_update_favorite_review(self):
+        """Test that User.update_favorite_review() works"""
+
+        user = User.query.get(1)
+
+        user.update_favorite_review(1)
+        user.update_favorite_review(2)
+
+        self.assertFalse(user.is_favorite_review(1))
+        self.assertTrue(user.is_favorite_review(2))
+
+    def test_add_favorite_product_from_review(self):
+        """Test that User.add_favorite_product_from_review() works"""
+
+        user = User.query.get(1)
+        user.add_favorite_product_from_review("A2")
+
+        self.assertTrue(user.is_favorite_product("A2"))
+
+    def test_get_favorite_reviews_for_product(self):
+        """Test that User.get_favorite_reviews_for_product() works"""
+
+        user = User.query.get(1)
+        fav_reviews = user.get_favorite_reviews_for_product("A1")
+
+        self.assertEqual(len(fav_reviews), 1)
+
+    def test_remove_favorite_reviews(self):
+        """Test that User.remove_favorite_reviews() works"""
+
+        user = User.query.get(1)
+        user.remove_favorite_reviews("A1")
+
+        self.assertFalse(user.is_favorite_review(1))
+
+
 ###############################################################
 
 if __name__ == "__main__":
