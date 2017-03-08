@@ -53,13 +53,12 @@ A user can view their favorite products and reviews by visiting their profile pa
 
 ![image](/static/img/user_page.png)
 
-
 ##Set up
 
 Clone or fork this repo:
 
 ```
-https://github.com/mich_berr/ProductGenius.git
+https://github.com/michberr/ProductGenius.git
 ```
 
 Create and activate a virtual environment inside your project directory:
