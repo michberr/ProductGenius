@@ -9,7 +9,7 @@ Product Genius enables consumers to make data-driven decisions about products. M
 
 Product Genius has 74% test coverage - see `tests.py`
 
-![image](/static/images/homepage.png)
+![image](/static/img/homepage.png)
 
 ##Search for Products
 
@@ -17,36 +17,41 @@ Users can search for products on the homepage or from the navbar. When the user 
 is determined by ranking matches to the product title above matches to the product description. The entire search is performed efficiently with a GIN index.
 You can read more about full-text search in postgres [here](http://rachbelaid.com/postgres-full-text-search-is-good-enough/).
 
-![image](/static/images/search_results.png)
+![image](/static/img/search_results.png)
 
 ##Product Genius scores using Bayesian Averaging
 
 Users can view the Product Genius score on the product details page. Most websites report a product's average review score - this is a poor metric when a product only has a few reviews! Two five-star ratings are not the same as 500. Product Genius understands this and uses Bayesian logic to provide a score that better represents customer satisfaction. The Product Genius score is a weighted average of a product's actual reviews and a prior expectation that unreviewed products would be on average a "3". Read more about Bayesian Averages [here](https://en.wikipedia.org/wiki/Bayesian_average)
 
-![image](/static/images/pg_score.png)
+![image](/static/img/pg_score.png)
 
 ##Extracting Review Keywords with Naive Bayes
 
 Rather than reading lengthy product descriptions, specs and reviews, users can quickly get a summary of the good and bad about a product by looking at the review keywords. These clouds were populated with a Naive Bayes model built with scikit-learn. Reviews were considered positive if they rated a product a 4 or 5, and negative if they rated a product a 1 or a 2. After the classifier was trained to predict positive and negative reviews, the 10 words with the highest likelihoods of being in either class were extracted. The model was cross-validated using KFolds on a sample of 50 products, yielding over 90% precision and recall. The model code can be found in `keyword_extraction.py`.
 
-![image](/static/images/keywords.png)
+![image](/static/img/keywords.png)
 
 ##Advanced review search
 
 Scanning through hundreds of product reviews is time consuming! Product Genius allows users to search directly within product reviews for the terms they care about. Like the product search, the advanced review search handles case, stemming, and ranks results by relevancy. Reviews are considered more relevant if the term appears in the title than the body of the review. The search call is made via AJAX, and a jquery highlight plugin was used to highlight the user's search query in the results. 
 
-![image](/static/images/review_search.png)
+![image](/static/img/review_search.png)
 
 
 ##Favoriting Products and Reviews
 
-To use this feature, users must create an account or sign in prior to searching. When the user clicks on <kbd>Favorite</kbd> next to a product, or the heart next to a review, that information is stored in the database. If a user favorites a review, the product is automatically favorited. If a user unfavorites a product, all of their favorited reviews are removed as well. 
+To use this feature, users must create an account or sign in prior to searching. 
+
+![image](/static/img/login.png)
+
+
+When the user clicks on <kbd>Favorite</kbd> next to a product, or the heart next to a review, that information is stored in the database. If a user favorites a review, the product is automatically favorited. If a user unfavorites a product, all of their favorited reviews are removed as well. 
+
+![image](/static/img/favorite.png)
 
 A user can view their favorite products and reviews by visiting their profile page. 
 
-![image](/static/images/login.png)
-![image](/static/images/favorite.png)
-![image](/static/images/user_page.png)
+![image](/static/img/user_page.png)
 
 
 ##Set up
@@ -88,6 +93,8 @@ python server.py
 Navigate to `localhost:5000/` to begin researching products!
 
 ##Future Plans
+Features I plan to implement in the future include testing for bimodal product rating distributions, additional sorting and filtering features for products, and improvements to the existing keyword extraction model using stemming and corrections for class imbalance.
+     
 
 ##The Author
 
