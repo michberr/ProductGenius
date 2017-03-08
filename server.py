@@ -196,7 +196,7 @@ def process_registration():
         message = "That email already exists. Please login or register for a new account"
     else:
         User.register_user(name, email, password)
-        message = "Welcome to ProductGenius"
+        message = "Welcome to Product Genius"
 
     flash(message)
 
@@ -267,9 +267,9 @@ if __name__ == "__main__":
     connect_to_db(app)
 
     # Use the DebugToolbar
-    DebugToolbarExtension(app)
+    # DebugToolbarExtension(app)
 
-    app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+    #app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     app.run(port=5000, host='0.0.0.0')

@@ -354,7 +354,7 @@ class FlaskTestNoUser(unittest.TestCase):
                                   follow_redirects=True)
 
         # Should redirect to login and flash a message
-        self.assertIn("Welcome to ProductGenius", result.data)
+        self.assertIn("Welcome to Product Genius", result.data)
 
     def test_login_user(self):
         """Test that login post route works"""

@@ -8,14 +8,11 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 from sklearn.feature_extraction import text
-# from nltk.stem.porter import *
 from random import sample
 
 # Set of additional stop words to add to the builtin sklearn stop words
 PG_STOP_WORDS = ["great", "good", "bad", "awful", "excellent", "terrible",
                  "amazing", "worst", "perfect", "horrible", "best"]
-
-# stemmer = PorterStemmer()
 
 
 def get_keywords_from_naive_bayes(product, new_stop_words, validation=False):
@@ -48,9 +45,11 @@ def get_keywords_from_naive_bayes(product, new_stop_words, validation=False):
             labels.append("positive")
             reviews.append(rev.review)
 
-    # Instantiate a Text-frequency, inverse document frequency vectorizer
+    # Add any new stop words (e.g. the product name) to the set of default stop words
     new_stop_words.extend(PG_STOP_WORDS)
     stop_words = text.ENGLISH_STOP_WORDS.union(new_stop_words)
+
+    # Instantiate a count vectorizer
     vectorizer = CountVectorizer(stop_words=stop_words)
 
     # Convert our list of reviews into a sparse matrix of word counts where the
