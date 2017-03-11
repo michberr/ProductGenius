@@ -1,3 +1,5 @@
+// AJAX call to search within a product's reviews and return the most relevant reviews
+
 "use strict";
 
 // Replace existing html with new html that contains 

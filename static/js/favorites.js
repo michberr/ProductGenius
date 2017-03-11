@@ -1,3 +1,5 @@
+// Functions and event handlers for favoriting products and reviews
+
 "use strict";
 
 // ====================== Favoriting Products ===================
@@ -9,7 +11,7 @@ function handleFavoriteProductClick(evt) {
     // removing all favorited reviews
     if ($("#product-fav-button").text() === "Favorited") {
         
-        var response = confirm("Warning! Unfavoriting this product will delete any saved reviews");  
+        var response = confirm("Warning! Unfavoriting this product will delete any saved reviews");
         
         if (response === true) {
             updateProductFavorite();

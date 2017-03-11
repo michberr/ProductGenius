@@ -1,3 +1,5 @@
+// Produces a chart.js histogram with product ratings on the product details page
+
 var options = { responsive: true };
 
 var ctx_bar = $("#barChart").get(0).getContext("2d");
