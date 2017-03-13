@@ -2,9 +2,11 @@
 
 Product Genius enables consumers to make data-driven decisions about products. Most online shopping sites display a product's average rating, which can be misleading for products with few reviews. Product Genius implements its own rating system, using Bayesian averaging, to present a more robust metric to the consumer. Product Genius also aggregates useful information from customer reviews, using machine learning to extract the most relevant terms from positive and negative reviews of a product. Finally, users can search within a product's reviews and favorite the most relevant ones, to assist with side-by-side product comparisons.
 
+Product Genius is deployed on heroku: [https://productgenius.herokuapp.com/](https://productgenius.herokuapp.com/)
+
 ##Technology Stack
 
-**Frontend:** HTML, CSS, Javascript, jQuery, jQcloud, Chart.js, Bootstrap, Jinja<br/>
+**Frontend:** HTML, CSS, Javascript, jQuery, jQcloud, Chart.js, Bootstrap, Jinja2<br/>
 **Backend:** Python, Flask, PostgreSQL, SQLAlchemy, NumPy, Scikit-Learn<br/>
 
 Product Genius has 74% test coverage - see `tests.py`
