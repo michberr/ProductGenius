@@ -5,8 +5,14 @@ from model import db, connect_to_db, example_data, User, Product, Review
 import json
 
 
+######################################################################
+# Tests that check flask routes without requiring database access
+# or flask session
+######################################################################
+
+
 class ProductGeniusTests(unittest.TestCase):
-    """Tests for Product Genius routes that don't require db."""
+    """Tests for Product Genius flask routes that don't require db."""
 
     def setUp(self):
         """Stuff to do before every test"""
@@ -39,11 +45,13 @@ class ProductGeniusTests(unittest.TestCase):
         self.assertIn("Password", result.data)
 
 
-class TestDBMethods(unittest.TestCase):
-    """Test basic methods for db classes.
+######################################################################
+# Tests db instance methods. These test require database access,
+# but no additional setup for db objects.
+######################################################################
 
-        These tests do not require extra setup for any db objects
-    """
+class TestDBMethods(unittest.TestCase):
+    """Test basic instance methods for db classes."""
 
     def setUp(self):
         """Stuff to do before every test."""
@@ -128,6 +136,13 @@ class TestDBMethods(unittest.TestCase):
         self.assertIn("monitor broke", results2[0][1])
 
 
+######################################################################
+# Tests related to Product-Genius Scores. These require access to the
+# database and a Product object with additional defined attributes
+# called from the Product methods.
+######################################################################
+
+
 class TestPGScores(unittest.TestCase):
     """Test that product genius scores are calculated correctly"""
 
@@ -184,6 +199,12 @@ class TestPGScores(unittest.TestCase):
         self.assertEqual(pg1, 37.0/12)
         self.assertEqual(pg2, 3.0)
 
+
+######################################################################
+# Tests for favoriting products and reviews. These tests require
+# database access, and a User object that has already favorited a
+# product and review.
+######################################################################
 
 class TestFavoriting(unittest.TestCase):
     """Tests methods for favoriting products and reviews"""
@@ -288,6 +309,12 @@ class TestFavoriting(unittest.TestCase):
         self.assertFalse(user.is_favorite_review(1))
 
 
+######################################################################
+# Tests flask routes when no user is logged in. These tests require
+# database access, a product object with additional attributes created
+# from Product methods, but no active session.
+######################################################################
+
 class FlaskTestNoUser(unittest.TestCase):
     """Test flask routes without a user."""
 
@@ -383,6 +410,11 @@ class FlaskTestNoUser(unittest.TestCase):
         self.assertIn("<a href=\"/register\">Register</a>", result.data)
         self.assertIn("<a href=\"/login\">Login</a>", result.data)
 
+
+######################################################################
+# Tests flask routes with a user. These tests require database access,
+# need an active session, and can change the database.
+######################################################################
 
 class FlaskTestUser(unittest.TestCase):
     """Test flask routes with a user."""
